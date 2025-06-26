@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Servicios - Sentirse Bien</title>
+    <link rel="icon" type="image/png" href="images/Logo negro.png">
+    <link rel="stylesheet" href="styles.css">
+    <script defer src="servicios.js"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <img src="images/Logo blanco.png" alt="Logo del spa">
+        <div class="nav-links">
+            <a href="index.html">Inicio</a>
+            <a href="servicios.html">Servicios</a>
+            <a href="turnos.html">Turnos</a>
+            <a href="#contacto">Contacto</a>
+            <a href="login.html" id="nav-login-link">Iniciar Sesión</a>
+            <a href="admin.html" id="nav-admin-link" style="display:none;">Panel Admin</a>
+            <a href="perfil-cliente.html" id="nav-client-link" style="display:none;">Mi Cuenta</a>
+            <a href="perfil-empleado.html" id="nav-employee-profile" style="display:none;">Mi Cuenta</a>
+            <button id="logout-button" style="display:none;">Cerrar Sesión</button>
+        </div>
+    </nav>
+
+    <script>
+    // Script único para manejar la navbar y sesión
+    document.addEventListener('DOMContentLoaded', () => {
+        const token = localStorage.getItem('token');
+        const navLoginLink = document.getElementById('nav-login-link');
+        const navAdminLink = document.getElementById('nav-admin-link');
+        const navClientLink = document.getElementById('nav-client-link');
+        const navEmployeeProfile = document.getElementById('nav-employee-profile');
+        const logoutButton = document.getElementById('logout-button');
+
+        if (token) {
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                
+                navLoginLink.style.display = 'none';
+                if (logoutButton) logoutButton.style.display = 'block';
+                
+                switch(payload.role) {
+                    case 'admin':
+                        if (navAdminLink) navAdminLink.style.display = 'block';
+                        break;
+                    case 'empleado':
+                        if (navEmployeeProfile) navEmployeeProfile.style.display = 'block';
+                        break;
+                    case 'cliente':
+                        if (navClientLink) navClientLink.style.display = 'block';
+                        break;
+                }
+            } catch (error) {
+                console.error('Error al verificar token:', error);
+                localStorage.removeItem('token');
+            }
+        }
+
+        // Manejar cierre de sesión
+        if (logoutButton) {
+            logoutButton.addEventListener('click', () => {
+                localStorage.removeItem('token');
+                window.location.href = 'index.html';
+            });
+        }
+    });
+    </script>
+
+    <h1 class="home-title">NUESTROS SERVICIOS</h1>
+
+    <section class="services-container">
+        <h2 class="services-title">Servicios Individuales</h2>
+        <div class="services" id="servicios-individuales">
+            </div>
+    </section>
+
+    <section class="services-container">
+        <h2 class="services-title">Servicios Grupales</h2>
+        <div class="services" id="servicios-grupales">
+            </div>
+    </section>
+
+    <section class="services-container">
+        <h2 class="services-title">Combos Disponibles</h2>
+        <div class="combos" id="combos-container"></div>
+    </section>
+
+    <div class="services-container">
+        <a href="index.html" class="explore-button">Volver al inicio</a>
+    </div>
+
+    <footer class="contact-container" id="contacto">
+        <div class="contact-content">
+            <div class="contact-box">
+                <div class="contact-left">
+                    <img src="images/logo blanco.png" alt="Logo del spa">
+                    <p>En nuestro spa, encontrarás el equilibrio perfecto entre bienestar y relajación. ¡Déjanos cuidarte!</p>
+                </div>
+            </div>
+    
+            <div class="contact-box contact-right">
+                <div class="form-wrapper">
+                    <h2 class="contact-title">Newsletter</h2>
+    
+                    <div class="form-container">
+                        <p>Suscribite para recibir novedades y promociones exclusivas.</p>
+                        <form class="subscribe-form">
+                            <input type="email" placeholder="Tu correo electrónico" required>
+                            <button type="submit">ENVIAR</button>
+                        </form>
+                    </div>
+                </div>
+    
+                <div class="contact-info">
+                    <h2 class="contact-title">Contáctenos</h2>
+                    <div class="contact-description">
+                        <p>📍 Dirección: Av. Resistencia 123, Chaco</p>
+                        <p>📞 Teléfono: +54 3624762542</p>
+                        <p>📩 Email: reservas@sentirsebien.com</p>
+                        <div class="social-icons">
+                            <a href="https://www.facebook.com/profile.php?id=61576044302960" target="_blank" rel="noopener" aria-label="Facebook">
+                                <img src="images/facebook.png" alt="Facebook">
+                            </a>
+                            <a href="https://instagram.com/sentirsebien" target="_blank" rel="noopener" aria-label="Instagram">
+                                <img src="images/instagram.png" alt="Instagram">
+                            </a>
+                            <a href="https://twitter.com/sentirsebien" target="_blank" rel="noopener" aria-label="Twitter">
+                                <img src="images/twitter.png" alt="Twitter">
+                            </a>
+                            <a href="https://wa.me/543624762542" target="_blank" rel="noopener" aria-label="WhatsApp">
+                                <img src="images/whatsapp.png" alt="WhatsApp">
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

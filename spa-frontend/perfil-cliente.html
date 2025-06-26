@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Cuenta - Sentirse Bien</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="flex-container">
+    <nav class="navbar">
+        <img src="images/Logo blanco.png" alt="Logo del spa">
+        <div class="nav-links">
+            <a href="index.html">Inicio</a>
+            <a href="servicios.html">Servicios</a>
+            <a href="turnos.html">Turnos</a>
+            <a href="index.html#contacto">Contacto</a>
+            <a href="login.html" id="nav-login-link">Iniciar Sesión</a>
+            <a href="admin.html" id="nav-admin-link" style="display:none;">Panel Admin</a>
+            <a href="perfil-cliente.html" id="nav-client-link" style="display:none;">Mi Cuenta</a>
+            <a href="perfil-empleado.html" id="nav-employee-profile" style="display:none;">Mi Cuenta</a>
+            <button id="logout-button" style="display:none;">Cerrar Sesión</button>
+        </div>
+    </nav>
+
+    <script>
+    // Script común para manejar la navbar
+    document.addEventListener('DOMContentLoaded', () => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                
+                document.getElementById('nav-login-link').style.display = 'none';
+                document.getElementById('logout-button').style.display = 'block';
+                
+                if (payload.role === 'admin') {
+                    document.getElementById('nav-admin-link').style.display = 'block';
+                } else if (payload.role === 'empleado') {
+                    document.getElementById('nav-employee-profile').style.display = 'block';
+                } else if (payload.role === 'cliente') {
+                    document.getElementById('nav-client-link').style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error al verificar token:', error);
+                localStorage.removeItem('token');
+            }
+        }
+
+        // Manejar cierre de sesión
+        document.getElementById('logout-button')?.addEventListener('click', () => {
+            localStorage.removeItem('token');
+            window.location.href = 'index.html';
+        });
+    });
+    </script>
+
+    <main class="profile-container">
+        <div class="profile-header">
+            <h1 class="profile-title">Mi Cuenta</h1>
+        </div>
+        <div class="profile-content">
+            <div id="client-data">
+                <!-- Los datos se cargarán con JavaScript -->
+            </div>
+
+            <section class="profile-section">
+                <h2>Historial de Reservas</h2>
+                <div id="historial-reservas">
+                    <p>Cargando historial...</p>
+                </div>
+            </section>
+            <button id="logout-button" class="form-button">Cerrar Sesión</button>
+        </div>
+    </main>
+
+    <script src="perfil-cliente.js"></script>
+</body>
+</html>

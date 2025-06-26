@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Perfil - Empleado</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" type="image/png" href="images/Logo negro.png">
+</head>
+<body>
+    <nav class="navbar">
+        <img src="images/Logo blanco.png" alt="Logo del spa">
+        <div class="nav-links">
+            <a href="index.html">Inicio</a>
+            <a href="servicios.html">Servicios</a>
+            <a href="turnos.html">Turnos</a>
+            <a href="index.html#contacto">Contacto</a>
+            <a href="login.html" id="nav-login-link">Iniciar Sesión</a>
+            <a href="admin.html" id="nav-admin-link" style="display:none;">Panel Admin</a>
+            <a href="perfil-cliente.html" id="nav-client-link" style="display:none;">Mi Cuenta</a>
+            <a href="perfil-empleado.html" id="nav-employee-profile" style="display:none;">Mi Cuenta</a>
+            <button id="logout-button" style="display:none;">Cerrar Sesión</button>
+        </div>
+    </nav>
+
+    <div class="profile-container">
+        <h1>Mi Perfil de Empleado</h1>
+
+        <!-- Info personal -->
+        <div class="profile-section">
+            <h2>Información Personal</h2>
+            <div id="employee-info">
+                <!-- Los datos se cargarán con JavaScript -->
+            </div>
+        </div>
+
+        <!-- Cambiar contraseña -->
+        <div class="profile-section">
+            <h2>Cambiar Contraseña</h2>
+            <button id="show-password-form" class="action-button">Cambiar Contraseña</button>
+            <div id="password-change-form" class="hidden">
+                <form id="change-password-form">
+                    <div class="form-group">
+                        <label for="current-password">Contraseña actual:</label>
+                        <input type="password" id="current-password">
+                    </div>
+                    <div class="form-group">
+                        <label for="new-password">Nueva contraseña:</label>
+                        <input type="password" id="new-password">
+                    </div>
+                    <div class="form-group">
+                        <label for="confirm-password">Confirmar nueva contraseña:</label>
+                        <input type="password" id="confirm-password">
+                    </div>
+                    <button type="submit" class="form-button">Actualizar</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Turnos pendientes -->
+        <div class="profile-section">
+            <h2>Turnos Pendientes</h2>
+            <table id="tabla-turnos">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Hora</th>
+                        <th>Cliente</th>
+                        <th>Servicio</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+            <button id="btn-descargar-pdf" class="form-button">Descargar PDF</button>
+        </div>
+
+        <!-- Futuras funcionalidades -->
+        <div class="profile-section hidden" id="shifts-section">
+            <h2>Mis Turnos Asignados</h2>
+            <div id="employee-shifts">
+                <p>Los turnos asignados aparecerán aquí próximamente.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        // Navbar y cierre sesión
+        document.addEventListener('DOMContentLoaded', () => {
+            const token = localStorage.getItem('token');
+            const payload = token ? JSON.parse(atob(token.split('.')[1])) : null;
+
+            if (!payload) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            document.getElementById('nav-login-link').style.display = 'none';
+            document.getElementById('logout-button').style.display = 'block';
+
+            if (payload.role === 'admin') {
+                document.getElementById('nav-admin-link').style.display = 'block';
+            } else if (payload.role === 'cliente') {
+                document.getElementById('nav-client-link').style.display = 'block';
+            } else if (payload.role === 'empleado') {
+                document.getElementById('nav-employee-profile').style.display = 'block';
+            }
+
+            document.getElementById('logout-button')?.addEventListener('click', () => {
+                localStorage.removeItem('token');
+                window.location.href = 'index.html';
+            });
+        });
+    </script>
+
+    <script src="perfil-empleado.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+</body>
+</html>

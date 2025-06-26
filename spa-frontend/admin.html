@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administración - Sentirse Bien</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" type="image/png" href="images/Logo negro.png">
+</head>
+
+<body>
+    <nav class="navbar">
+        <img src="images/Logo blanco.png" alt="Logo del spa">
+        <div class="nav-links">
+            <a href="index.html">Inicio</a>
+            <a href="servicios.html">Servicios</a>
+            <a href="turnos.html">Turnos</a>
+            <a href="index.html#contacto">Contacto</a>
+            <a href="login.html" id="nav-login-link">Iniciar Sesión</a>
+            <a href="admin.html" id="nav-admin-link" style="display:none;">Panel Admin</a>
+            <a href="perfil-cliente.html" id="nav-client-link" style="display:none;">Mi Cuenta</a>
+            <a href="perfil-empleado.html" id="nav-employee-profile" style="display:none;">Mi Cuenta</a>
+            <button id="logout-button" style="display:none;">Cerrar Sesión</button>
+        </div>
+    </nav>
+
+    <script>
+    // Script único para manejar la navbar y sesión
+    document.addEventListener('DOMContentLoaded', () => {
+        const token = localStorage.getItem('token');
+        const navLoginLink = document.getElementById('nav-login-link');
+        const navAdminLink = document.getElementById('nav-admin-link');
+        const navClientLink = document.getElementById('nav-client-link');
+        const navEmployeeProfile = document.getElementById('nav-employee-profile');
+        const logoutButton = document.getElementById('logout-button');
+
+        if (token) {
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                
+                navLoginLink.style.display = 'none';
+                if (logoutButton) logoutButton.style.display = 'block';
+                
+                switch(payload.role) {
+                    case 'admin':
+                        if (navAdminLink) navAdminLink.style.display = 'block';
+                        break;
+                    case 'empleado':
+                        if (navEmployeeProfile) navEmployeeProfile.style.display = 'block';
+                        break;
+                    case 'cliente':
+                        if (navClientLink) navClientLink.style.display = 'block';
+                        break;
+                }
+            } catch (error) {
+                console.error('Error al verificar token:', error);
+                localStorage.removeItem('token');
+            }
+        }
+
+        // Manejar cierre de sesión
+        if (logoutButton) {
+            logoutButton.addEventListener('click', () => {
+                localStorage.removeItem('token');
+                window.location.href = 'index.html';
+            });
+        }
+    });
+    </script>
+
+    <h1 class="admin-title">Panel de Administración</h1>
+    <section class="admin-container">
+        <div class="admin-section">
+            <h2>Gestión de Servicios</h2>
+            <div class="button-group">
+                <button id="add-service" class="action-button">➕ Añadir Servicio</button>
+                <button id="edit-service" class="action-button">✏️ Modificar Servicio</button>
+                <button id="delete-service" class="action-button">🗑️ Eliminar Servicio</button>
+            </div>
+        </div>
+
+        <div id="service-form-container" class="admin-section hidden">
+            <h2 id="service-form-title">Añadir Servicio</h2>
+            <form id="service-form">
+                <div class="form-group">
+                    <label for="nombre">Nombre del Servicio:</label>
+                    <input type="text" id="nombre" name="nombre" required placeholder="Ej: Hidromasajes">
+                </div>
+
+                <div class="form-group">
+                    <label for="descripcion">Descripción:</label>
+                    <textarea id="descripcion" name="descripcion" placeholder="Descripción del servicio"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="duracion">Duración (min):</label>
+                    <input type="number" id="duracion" name="duracion" required placeholder="Ej: 60">
+                </div>
+
+                <div class="form-group">
+                    <label for="precio">Precio:</label>
+                    <input type="number" id="precio" name="precio" step="0.01" required placeholder="Ej: 50.00">
+                </div>
+
+                <div class="form-group">
+                    <label for="categoria">Categoría:</label>
+                    <select id="categoria" name="categoria">
+                        <option value="Masajes">Masajes</option>
+                        <option value="Belleza">Belleza</option>
+                        <option value="Tratamientos Faciales">Tratamientos Faciales</option>
+                        <option value="Tratamientos Corporales">Tratamientos Corporales</option>
+                        <option value="Servicios Grupales">Servicios Grupales</option>
+                    </select>
+                    <p id="grupal-notice" class="notice hidden">Nota: Los servicios grupales solo permiten un servicio por reserva.</p>
+                </div>
+
+                <div class="form-buttons">
+                    <button type="submit">Guardar</button>
+                    <button type="button" id="cancel-service">Cancelar</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="admin-section">
+            <h2>Gestión de Combos</h2>
+            <div class="button-group">
+                <button id="add-combo" class="action-button">➕ Añadir Combo</button>
+                <button id="edit-combo" class="action-button">✏️ Modificar Combo</button>
+                <button id="delete-combo" class="action-button">🗑️ Eliminar Combo</button>
+            </div>
+        </div>
+
+        <div id="combo-form-container" class="admin-section hidden">
+            <h2 id="combo-form-title">Añadir Combo</h2>
+            <form id="combo-form">
+                <div class="form-group">
+                    <label for="combo-nombre">Nombre del Combo:</label>
+                    <input type="text" id="combo-nombre" name="combo-nombre" required placeholder="Ej: Relax Total">
+                </div>
+
+                <div class="form-group">
+                    <label for="combo-descripcion">Descripción:</label>
+                    <textarea id="combo-descripcion" name="combo-descripcion" placeholder="Descripción del combo"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="combo-precio">Precio Total:</label>
+                    <input type="number" id="combo-precio" name="combo-precio" step="0.01" required placeholder="Ej: 120.00">
+                </div>
+
+                <div class="form-group">
+                    <label for="combo-servicios">Servicios en el Combo:</label>
+                    <input type="text" id="combo-servicios" name="combo-servicios" placeholder="IDs de servicios separados por comas">
+                    <p class="notice">Ejemplo: 1, 2, 5</p>
+                </div>
+
+                <div class="form-buttons">
+                    <button type="submit">Guardar</button>
+                    <button type="button" id="cancel-combo">Cancelar</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Sección de Gestión de Turnos -->
+        <div class="admin-section">
+            <h2>Gestión de Turnos</h2>
+            <div class="button-group">
+                <button id="add-turno" class="action-button">➕ Crear Turno</button>
+                <button id="edit-turno" class="action-button">✏️ Modificar Turno</button>
+                <button id="delete-turno" class="action-button">🗑️ Eliminar Turno</button>
+            </div>
+        </div>
+
+        <div id="turno-form-container" class="admin-section hidden">
+            <h2 id="turno-form-title">Crear Turno</h2>
+            <form id="turno-form">
+                <!-- Servicios -->
+                <button type="button" id="btn-seleccionar-servicios">Seleccionar servicios</button>
+                <div id="servicios-popup" class="popup hidden">
+                    <h3>Selecciona tus servicios:</h3>
+                    <div id="servicios-categorias"></div>
+                    <div style="margin-top:1em;">
+                        <button type="button" id="guardar-servicios-popup">Guardar selección</button>
+                        <button type="button" id="cerrar-servicios-popup">Cancelar</button>
+                    </div>
+                </div>
+                <div id="servicios-seleccionados"></div>
+                <!-- Empleados -->
+                <button type="button" id="btn-seleccionar-empleados">Seleccionar empleados</button>
+                <div id="empleados-popup" class="popup hidden">
+                    <h3>Selecciona los empleados:</h3>
+                    <div id="empleados-lista"></div>
+                    <div style="margin-top:1em;">
+                        <button type="button" id="guardar-empleados-popup">Guardar selección</button>
+                        <button type="button" id="cerrar-empleados-popup">Cancelar</button>
+                    </div>
+                </div>
+                <div id="empleados-seleccionados"></div>
+                <div class="form-group">
+                    <label for="turno-fecha">Fecha:</label>
+                    <input type="date" id="turno-fecha" name="fecha" required>
+                </div>
+                <div class="form-group">
+                    <label for="turno-hora-inicio">Hora de inicio:</label>
+                    <input type="time" id="turno-hora-inicio" name="hora_inicio" required>
+                </div>
+                <div class="form-group">
+                    <label for="turno-hora-fin">Hora de fin:</label>
+                    <input type="time" id="turno-hora-fin" name="hora_fin" required>
+                </div>
+                <div class="form-group">
+                    <label for="turno-precio">Precio:</label>
+                    <input type="number" id="turno-precio" name="precio" step="0.01" required>
+                </div>
+                <div class="form-buttons">
+                    <button type="submit">Guardar</button>
+                    <button type="button" id="cancel-turno">Cancelar</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Sección de Gestión de Administradores -->
+        <div class="admin-section">
+            <h2>Gestión de Administradores</h2>
+            <div class="button-group">
+                <button id="add-admin" class="action-button">➕ Añadir Administrador</button>
+                <button id="view-admins" class="action-button">👥 Ver Administradores</button>
+            </div>
+        </div>
+
+        <!-- Formulario para añadir administrador (oculto inicialmente) -->
+        <div id="admin-form-container" class="admin-section hidden">
+            <h2>Añadir Administrador</h2>
+            <form id="admin-form">
+                <div class="form-group">
+                    <label for="admin-nombre">Nombre:</label>
+                    <input type="text" id="admin-nombre" name="nombre" required>
+                </div>
+                <div class="form-group">
+                    <label for="admin-apellido">Apellido:</label>
+                    <input type="text" id="admin-apellido" name="apellido" required>
+                </div>
+                <div class="form-group">
+                    <label for="admin-email">Correo Electrónico:</label>
+                    <input type="email" id="admin-email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="admin-telefono">Teléfono:</label>
+                    <input type="text" id="admin-telefono" name="telefono" required>
+                </div>
+                <div class="form-buttons">
+                    <button type="submit">Guardar</button>
+                    <button type="button" id="cancel-admin">Cancelar</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Lista de administradores (oculta inicialmente) -->
+        <div id="admins-list-container" class="admin-section hidden">
+            <h2>Lista de Administradores</h2>
+            <table id="admins-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre</th>
+                        <th>Email</th>
+                        <th>Teléfono</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+            <button id="close-admins-list" class="action-button">Cerrar</button>
+        </div>
+
+        <div class="admin-section">
+            <h2>Gestión de Empleados</h2>
+            <div class="button-group">
+                <button id="add-employee" class="action-button">➕ Añadir Empleado</button>
+                <button id="view-employees" class="action-button">👥 Ver Empleados</button>
+            </div>
+        </div>
+        
+        <!-- Sección de Gestión de Empleados -->
+        <div id="employee-form-container" class="admin-section hidden">
+            <h2>Añadir Empleado</h2>
+            <form id="employee-form">
+                <div class="form-group">
+                    <label for="employee-nombre">Nombre:</label>
+                    <input type="text" id="employee-nombre" name="nombre" required>
+                </div>
+                <div class="form-group">
+                    <label for="employee-apellido">Apellido:</label>
+                    <input type="text" id="employee-apellido" name="apellido" required>
+                </div>
+                <div class="form-group">
+                    <label for="employee-email">Correo Electrónico:</label>
+                    <input type="email" id="employee-email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="employee-telefono">Teléfono:</label>
+                    <input type="text" id="employee-telefono" name="telefono" required>
+                </div>
+                <div class="form-group">
+                    <label for="employee-puesto">Especialidad:</label>
+                    <input type="text" id="employee-puesto" name="puesto" required>
+                </div>
+                <div class="form-buttons">
+                    <button type="submit">Guardar</button>
+                    <button type="button" id="cancel-employee">Cancelar</button>
+                </div>
+            </form>
+        </div>
+
+        <div id="employees-list-container" class="admin-section hidden">
+            <h2>Lista de Empleados</h2>
+            <table id="employees-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre</th>
+                        <th>Email</th>
+                        <th>Especialidad</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+            <button id="close-employees-list" class="action-button">Cerrar</button>
+        </div>
+
+        <div id="asignar-servicios-container" class="admin-section hidden">
+            <h2>Asignar Servicios a Empleado</h2>
+            <div id="servicios-empleado-list"></div>
+            <button id="guardar-servicios-empleado" class="form-button">Guardar Cambios</button>
+            <button id="cancelar-servicios-empleado" class="form-button">Cancelar</button>
+        </div>
+
+        <h2>Turnos Pendientes</h2>
+        <table id="tabla-turnos-pendientes"></table>
+    </section>
+
+    <script src="admin.js"></script>
+    <script>
+        // Mostrar/ocultar nota para servicios grupales
+        document.getElementById('categoria').addEventListener('change', function() {
+            const notice = document.getElementById('grupal-notice');
+            if (this.value === 'Servicios Grupales') {
+                notice.classList.remove('hidden');
+            } else {
+                notice.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
