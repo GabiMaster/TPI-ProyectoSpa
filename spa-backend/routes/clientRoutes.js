@@ -59,12 +59,19 @@ router.post('/register', async (req, res) => {
 // Obtener datos de un cliente específico
 router.get('/:id', verifyToken, async (req, res) => {
     try {
+        console.log('Buscando cliente con ID:', req.params.id);
+        console.log('Usuario autenticado:', req.user);
+        
         const [rows] = await db.query('SELECT id_cliente, nombre, apellido, email, telefono FROM cliente WHERE id_cliente = ?', [req.params.id]);
         
+        console.log('Resultados de la consulta:', rows);
+        
         if (rows.length === 0) {
+            console.log('Cliente no encontrado con ID:', req.params.id);
             return res.status(404).json({ error: 'Cliente no encontrado' });
         }
 
+        console.log('Cliente encontrado:', rows[0]);
         res.json(rows[0]);
     } catch (err) {
         console.error('Error al obtener cliente:', err);

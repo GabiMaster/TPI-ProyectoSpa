@@ -80,6 +80,7 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementById('resumen-fecha').textContent = new Date(turnoSeleccionado.fecha).toLocaleDateString('es-ES');
             document.getElementById('resumen-hora').textContent = `${turnoSeleccionado.hora.slice(0,5)} - ${turnoSeleccionado.hora_fin ? turnoSeleccionado.hora_fin.slice(0,5) : '-'}`;
             document.getElementById('resumen-servicios').textContent = turnoSeleccionado.servicios;
+            document.getElementById('resumen-duracion').textContent = turnoSeleccionado.duracion_total || 0;
             document.getElementById('resumen-precio').textContent = parseFloat(turnoSeleccionado.precio).toFixed(2);
             
             // Mostrar botón de continuar

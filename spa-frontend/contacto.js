@@ -9,11 +9,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
     }
 
-    let fecha, hora, hora_fin, servicios, duracionTotal, precioTotal;
+    let fecha, hora, hora_fin, servicios, duracionTotal, precioTotal, turnoId;
 
     try {
         // Decodificar token para obtener el ID y rol
         const payload = JSON.parse(atob(token.split('.')[1]));
+        console.log('Payload del token:', payload);
+        
         if (payload.role !== 'cliente') {
             showToastError("Solo los clientes pueden reservar turnos");
             setTimeout(() => {
@@ -22,15 +24,21 @@ document.addEventListener("DOMContentLoaded", async () => {
             return;
         }
 
+        console.log('Intentando obtener datos del cliente con ID:', payload.id);
+        
         // Obtener datos básicos del cliente
-        const clienteResponse = await fetch(`https://9plm87v2-3000.brs.devtunnels.ms/api/clientes/${payload.id}`, {
+        const clienteResponse = await fetch(`http://localhost:3000/api/clientes/${payload.id}`, {
             headers: {
                 "Authorization": `Bearer ${token}`
             }
         });
 
+        console.log('Respuesta del servidor:', clienteResponse.status, clienteResponse.statusText);
+
         if (!clienteResponse.ok) {
-            throw new Error("Error al obtener datos del cliente");
+            const errorData = await clienteResponse.text();
+            console.error(`Error ${clienteResponse.status}:`, errorData);
+            throw new Error(`Error al obtener datos del cliente: ${clienteResponse.status} - ${errorData}`);
         }
 
         const cliente = await clienteResponse.json();
@@ -52,16 +60,14 @@ document.addEventListener("DOMContentLoaded", async () => {
         fecha = urlParams.get("fecha");
         hora = urlParams.get("hora");
         hora_fin = urlParams.get("hora_fin");
+        turnoId = urlParams.get("turnoId");
         
         // Los servicios vienen como string, no como JSON
         const serviciosString = urlParams.get("servicios");
         servicios = serviciosString ? serviciosString.split(', ').map(s => s.trim()) : [];
         
         duracionTotal = parseInt(urlParams.get("duracionTotal")) || 0;
-        precioTotal = parseFloat(urlParams.get("precio")) || 0; // Cambiar "precioTotal" por "precio"
-        
-        // También obtener el ID del turno
-        const turnoId = urlParams.get("turnoId");
+        precioTotal = parseFloat(urlParams.get("precio")) || 0;
 
         // Validar datos de reserva
         if (!fecha || !hora || servicios.length === 0) {
@@ -73,20 +79,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
 
         // Mostrar resumen
+        document.getElementById("turno-seleccionado").textContent = turnoId ? `Turno #${turnoId}` : "Ninguno";
         document.getElementById("resumen-fecha").textContent = new Date(fecha).toLocaleDateString('es-ES');
         document.getElementById("resumen-hora").textContent = `${hora.slice(0,5)} - ${hora_fin ? hora_fin.slice(0,5) : '-'}`;
-        document.getElementById("resumen-duracion").textContent = duracionTotal;
+        document.getElementById("resumen-servicios").textContent = servicios.join(', ');
+        document.getElementById("resumen-duracion").textContent = duracionTotal || 0;
         document.getElementById("resumen-precio").textContent = precioTotal.toFixed(2);
-
-        const resumenServicios = document.getElementById("resumen-servicios");
-        resumenServicios.innerHTML = "";
-
-        // Ahora servicios es un array de nombres, no de IDs
-        servicios.forEach(nombreServicio => {
-            const li = document.createElement("li");
-            li.textContent = nombreServicio;
-            resumenServicios.appendChild(li);
-        });
 
         // Rellenar datos del cliente
         document.getElementById("nombre").value = cliente.nombre;

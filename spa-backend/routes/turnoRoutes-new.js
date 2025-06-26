@@ -4,7 +4,7 @@ const router = express.Router();
 const nodemailer = require('nodemailer');
 const verifyToken = require('../middleware/verifyToken');
 
-const transporter = nodemailer.createTransport({
+const transporter = nodemailer.createTransporter({
     service: 'gmail',
     auth: {
         user: process.env.EMAIL_USER,
@@ -151,17 +151,17 @@ router.post('/reservas', async (req, res) => {
                     subject: 'Confirmación de Reserva - Sentirse Bien',
                     html: `
                         <div style="font-family: Arial; max-width: 600px; margin: auto;">
-                            <h1 style="color: #d14d72; text-align: center;">Resumen de tu reserva</h1>
+                            <h1 style="color: #4a6baf;">¡Reserva Confirmada!</h1>
                             <p>Hola ${clienteExistente[0].nombre},</p>
                             <p>Tu reserva ha sido confirmada con estos detalles:</p>
-                            <div style="background-color: #fff5f7; border: 1px solid #ffb3c6; border-radius: 10px; padding: 20px; box-shadow: 0 4px 8px rgba(45, 106, 79, 0.1);">
-                                <p style="font-size: 1rem; margin-bottom: 10px; color: #2d6a4f;"><strong>Turno seleccionado:</strong> Turno #${turno.id_turno}</p>
-                                <p style="font-size: 1rem; margin-bottom: 10px; color: #2d6a4f;"><strong>Fecha:</strong> ${new Date(turnoExistente[0].fecha).toLocaleDateString('es-ES')}</p>
-                                <p style="font-size: 1rem; margin-bottom: 10px; color: #2d6a4f;"><strong>Hora:</strong> ${turnoExistente[0].hora.slice(0,5)} - ${turnoExistente[0].hora_fin ? turnoExistente[0].hora_fin.slice(0,5) : '-'}</p>
-                                <p style="font-size: 1rem; margin-bottom: 10px; color: #2d6a4f;"><strong>Servicios:</strong> ${nombresServicios}</p>
-                                <p style="font-size: 1rem; margin-bottom: 10px; color: #2d6a4f;"><strong>Duración:</strong> ${turnoExistente[0].duracion_total || 0} min</p>
-                                <p style="font-size: 1rem; margin-bottom: 10px; color: #2d6a4f;"><strong>Precio:</strong> $${parseFloat(turnoExistente[0].precio).toFixed(2)}</p>
-                                <p style="font-size: 1rem; margin-bottom: 10px; color: #2d6a4f;"><strong>Método de pago:</strong> ${turno.metodoPago}</p>
+                            <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px;">
+                                <p><strong>Número:</strong> #${turno.id_turno}</p>
+                                <p><strong>Fecha:</strong> ${turnoExistente[0].fecha}</p>
+                                <p><strong>Hora:</strong> ${turnoExistente[0].hora}</p>
+                                <p><strong>Servicios:</strong> ${nombresServicios}</p>
+                                <p><strong>Duración:</strong> ${turnoExistente[0].duracion_total} min</p>
+                                <p><strong>Total:</strong> $${parseFloat(turnoExistente[0].precio).toFixed(2)}</p>
+                                <p><strong>Método:</strong> ${turno.metodoPago}</p>
                             </div>
                             <p>Gracias por elegir Sentirse Bien Spa. ¡Te esperamos!</p>
                         </div>`
