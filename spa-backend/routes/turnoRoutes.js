@@ -157,7 +157,7 @@ router.post('/reservas', async (req, res) => {
                             <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px;">
                                 <p><strong>Número:</strong> #${turno.id_turno}</p>
                                 <p><strong>Fecha:</strong> ${turnoExistente[0].fecha}</p>
-                                <p><strong>Hora:</strong> ${turnoExistente[0].hora}</p>
+                                <p><strong>Hora:</strong> ${turnoExistente[0].hora.slice(0,5)} - ${turnoExistente[0].hora_fin ? turnoExistente[0].hora_fin.slice(0,5) : '-'}</p>
                                 <p><strong>Servicios:</strong> ${nombresServicios}</p>
                                 <p><strong>Duración:</strong> ${turnoExistente[0].duracion_total} min</p>
                                 <p><strong>Total:</strong> $${parseFloat(turnoExistente[0].precio).toFixed(2)}</p>

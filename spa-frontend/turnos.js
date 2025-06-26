@@ -128,6 +128,7 @@ document.addEventListener("DOMContentLoaded", () => {
             turnoId: turnoSeleccionado.id_turno,
             fecha: turnoSeleccionado.fecha,
             hora: turnoSeleccionado.hora,
+            hora_fin: turnoSeleccionado.hora_fin,
             servicios: turnoSeleccionado.servicios,
             precio: turnoSeleccionado.precio,
             duracionTotal: turnoSeleccionado.duracion_total || 0

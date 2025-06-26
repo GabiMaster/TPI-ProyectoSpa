@@ -9,7 +9,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
     }
 
-    let fecha, hora, servicios, duracionTotal, precioTotal;
+    let fecha, hora, hora_fin, servicios, duracionTotal, precioTotal;
 
     try {
         // Decodificar token para obtener el ID y rol
@@ -51,6 +51,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const urlParams = new URLSearchParams(window.location.search);
         fecha = urlParams.get("fecha");
         hora = urlParams.get("hora");
+        hora_fin = urlParams.get("hora_fin");
         
         // Los servicios vienen como string, no como JSON
         const serviciosString = urlParams.get("servicios");
@@ -73,7 +74,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         // Mostrar resumen
         document.getElementById("resumen-fecha").textContent = new Date(fecha).toLocaleDateString('es-ES');
-        document.getElementById("resumen-hora").textContent = hora;
+        document.getElementById("resumen-hora").textContent = `${hora.slice(0,5)} - ${hora_fin ? hora_fin.slice(0,5) : '-'}`;
         document.getElementById("resumen-duracion").textContent = duracionTotal;
         document.getElementById("resumen-precio").textContent = precioTotal.toFixed(2);
 
@@ -137,6 +138,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                     id_turno: turnoId, // Usar el ID del turno seleccionado
                     fecha,
                     hora,
+                    hora_fin,
                     servicios: servicios.join(', '), // Enviar como string
                     duracionTotal,
                     precioTotal,
