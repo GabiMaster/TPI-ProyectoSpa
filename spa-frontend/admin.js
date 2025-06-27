@@ -1733,16 +1733,11 @@ document.addEventListener("DOMContentLoaded", () => {
                                     <span class="validation-status ${turno.estado}">${turno.estado}</span>
                                 </div>
                                 <div class="list-item-subtitle">
-                                    Cliente: ${turno.cliente || 'No asignado'} | 
-                                    Servicio: ${turno.servicio} | 
-                                    Empleado: ${turno.empleado} | 
+                                    Cliente: ${turno.cliente_nombre && turno.cliente_apellido ? `${turno.cliente_nombre} ${turno.cliente_apellido}` : 'No asignado'} | 
+                                    Servicios: ${turno.servicios || 'N/A'} | 
+                                    Empleados: ${turno.empleados || 'N/A'} | 
                                     $${turno.precio_total}
                                 </div>
-                            </div>
-                            <div class="list-item-actions">
-                                <button class="action-btn edit-btn" onclick="verDetallesTurno(${turno.id_turno})">
-                                    Detalles
-                                </button>
                             </div>
                         </div>
                     `).join('')}
@@ -1750,133 +1745,6 @@ document.addEventListener("DOMContentLoaded", () => {
             `;
         }
     }
-
-    // ==================== FUNCIÓN PARA VER DETALLES DE TURNO ====================
-    
-    // Función global para ver detalles de un turno específico
-    window.verDetallesTurno = async function(turnoId) {
-        try {
-            const response = await fetch(`${API_BASE_URL}/turnos/${turnoId}`, {
-                headers: { "Authorization": `Bearer ${token}` }
-            });
-            
-            if (!response.ok) {
-                throw new Error(`Error ${response.status}: ${response.statusText}`);
-            }
-            
-            const turno = await response.json();
-            mostrarDetallesTurno(turno);
-            
-        } catch (error) {
-            showAlert("Error al cargar detalles del turno: " + error.message, true);
-            console.error(error);
-        }
-    }
-    
-    function mostrarDetallesTurno(turno) {
-        // Create a detailed popup for turno details
-        const detailsHTML = `
-            <div id="turno-details-popup" class="popup show">
-                <h3>Detalles del Turno #${turno.id_turno}</h3>
-                <div class="popup-content">
-                    <div class="turno-details">
-                        <div class="detail-row">
-                            <strong>Estado:</strong> 
-                            <span class="validation-status ${turno.estado}">${turno.estado}</span>
-                        </div>
-                        <div class="detail-row">
-                            <strong>Fecha:</strong> ${new Date(turno.fecha).toLocaleDateString('es-ES')}
-                        </div>
-                        <div class="detail-row">
-                            <strong>Horario:</strong> ${turno.hora_inicio} - ${turno.hora_fin}
-                        </div>
-                        <div class="detail-row">
-                            <strong>Cliente:</strong> ${turno.cliente_nombre ? `${turno.cliente_nombre} ${turno.cliente_apellido}` : 'No asignado'}
-                        </div>
-                        <div class="detail-row">
-                            <strong>Email:</strong> ${turno.cliente_email || 'N/A'}
-                        </div>
-                        <div class="detail-row">
-                            <strong>Servicios:</strong> ${turno.servicios}
-                        </div>
-                        <div class="detail-row">
-                            <strong>Empleados:</strong> ${turno.empleados}
-                        </div>
-                        <div class="detail-row">
-                            <strong>Precio Total:</strong> $${turno.precio_total}
-                        </div>
-                        <div class="detail-row">
-                            <strong>Fecha de Creación:</strong> ${turno.fecha_creacion ? new Date(turno.fecha_creacion).toLocaleString('es-ES') : 'N/A'}
-                        </div>
-                    </div>
-                    
-                    ${turno.estado === 'reservado' ? `
-                        <div class="turno-actions">
-                            <button class="action-btn confirm-btn" onclick="confirmarTurno(${turno.id_turno})">
-                                Confirmar Turno
-                            </button>
-                            <button class="action-btn cancel-btn" onclick="cancelarTurnoAdmin(${turno.id_turno})">
-                                Cancelar Turno
-                            </button>
-                        </div>
-                    ` : ''}
-                </div>
-                <div class="popup-actions">
-                    <button type="button" class="popup-btn secondary" onclick="cerrarDetallesTurno()">Cerrar</button>
-                </div>
-            </div>
-        `;
-        
-        // Remove existing popup if any
-        const existingPopup = document.getElementById('turno-details-popup');
-        if (existingPopup) {
-            existingPopup.remove();
-        }
-        
-        // Add to body
-        document.body.insertAdjacentHTML('beforeend', detailsHTML);
-    }
-    
-    // Function to close turno details popup
-    window.cerrarDetallesTurno = function() {
-        const popup = document.getElementById('turno-details-popup');
-        if (popup) {
-            popup.remove();
-        }
-    }
-    
-    // Function to confirm turno from details popup
-    window.confirmarTurno = async function(turnoId) {
-        try {
-            const response = await fetch(`${API_BASE_URL}/turnos/${turnoId}/confirmar`, {
-                method: 'POST',
-                headers: { 
-                    "Authorization": `Bearer ${token}`,
-                    "Content-Type": "application/json"
-                }
-            });
-            
-            if (!response.ok) {
-                throw new Error(`Error ${response.status}: ${response.statusText}`);
-            }
-            
-            showAlert("Turno confirmado exitosamente", false);
-            cerrarDetallesTurno();
-            
-            // Refresh historial if it's open
-            const historialPopup = document.getElementById("historial-turnos-popup");
-            if (historialPopup && !historialPopup.classList.contains("hidden")) {
-                const activeFilter = document.querySelector('.filter-btn.active');
-                if (activeFilter) {
-                    const estado = activeFilter.textContent.toLowerCase().replace('dos', 'do').replace('s', '');
-                    await cargarHistorialTurnos(estado === 'todo' ? 'todos' : estado);
-                }
-            }
-        } catch (error) {
-            console.error('Error al confirmar turno:', error);
-            showAlert(`Error al confirmar turno: ${error.message}`, true);
-        }
-    };
 
     // ==================== FIN DEL DOCUMENTO ====================
 });
