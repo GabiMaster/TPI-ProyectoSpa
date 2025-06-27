@@ -426,13 +426,12 @@ router.get('/historial-completo', verifyToken, async (req, res) => {
                 c.nombre as cliente_nombre,
                 c.apellido as cliente_apellido,
                 c.email as cliente_email,
-                e.nombre as empleado_nombre,
-                e.apellido as empleado_apellido,
-                GROUP_CONCAT(s.nombre SEPARATOR ', ') as servicios
+                GROUP_CONCAT(DISTINCT CONCAT(e.nombre, ' ', e.apellido) SEPARATOR ', ') as empleados,
+                GROUP_CONCAT(DISTINCT s.nombre SEPARATOR ', ') as servicios
             FROM turno t
             LEFT JOIN cliente c ON t.id_cliente = c.id_cliente
-            LEFT JOIN empleado_turno et ON t.id_turno = et.id_turno
-            LEFT JOIN empleado e ON et.id_empleado = e.id_empleado
+            LEFT JOIN turno_empleado te ON t.id_turno = te.id_turno
+            LEFT JOIN empleado e ON te.id_empleado = e.id_empleado
             LEFT JOIN turno_servicio ts ON t.id_turno = ts.id_turno
             LEFT JOIN servicio s ON ts.id_servicio = s.id_servicio
         `;
@@ -458,6 +457,8 @@ router.get('/historial-completo', verifyToken, async (req, res) => {
         res.status(500).json({ error: 'Error interno del servidor' });
     }
 });
+
+
 
 // Cancelar turno (con regla de 48h)
 router.put('/cancelar/:id', verifyToken, async (req, res) => {

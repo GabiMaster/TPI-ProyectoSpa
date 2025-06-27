@@ -114,13 +114,29 @@ document.addEventListener("DOMContentLoaded", () => {
     const handleFetchError = async (response) => {
         if (!response.ok) {
             const errorText = await response.text();
-            console.error('Error response:', errorText);
+            console.error(`❌ Error ${response.status} en ${response.url}:`, errorText);
             try {
                 const errorData = JSON.parse(errorText);
                 const errorMessage = errorData.error || errorData.message || `Error ${response.status}: ${response.statusText}`;
-                throw new Error(errorMessage);
-            } catch {
-                throw new Error(errorText || `Error ${response.status}: ${response.statusText}`);
+                
+                // Mensajes de error más específicos
+                if (response.status === 404) {
+                    throw new Error(`Endpoint no encontrado: ${response.url}`);
+                } else if (response.status === 401) {
+                    throw new Error('Error de autenticación - Token inválido o expirado');
+                } else if (response.status === 403) {
+                    throw new Error('No tienes permisos para realizar esta acción');
+                } else if (response.status === 500) {
+                    throw new Error(`Error interno del servidor: ${errorMessage}`);
+                } else {
+                    throw new Error(errorMessage);
+                }
+            } catch (parseError) {
+                if (parseError instanceof SyntaxError) {
+                    throw new Error(`Error ${response.status}: ${errorText || response.statusText}`);
+                } else {
+                    throw parseError;
+                }
             }
         }
         return response.json();
@@ -1735,131 +1751,132 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // ==================== CARGAR EMPLEADOS EN VALIDACIÓN ====================
+    // ==================== FUNCIÓN PARA VER DETALLES DE TURNO ====================
     
-    // Cargar lista de empleados para validación
-    document.getElementById("validate-assignment")?.addEventListener("click", async () => {
+    // Función global para ver detalles de un turno específico
+    window.verDetallesTurno = async function(turnoId) {
         try {
-            const response = await fetch(`${API_ADMIN_BASE_URL}/empleados`, {
+            const response = await fetch(`${API_BASE_URL}/turnos/${turnoId}`, {
                 headers: { "Authorization": `Bearer ${token}` }
             });
             
-            const empleados = await handleFetchError(response);
-            cargarEmpleadosParaValidacion(empleados);
-            toggleVisibility(document.getElementById("validation-form-container"), true);
+            if (!response.ok) {
+                throw new Error(`Error ${response.status}: ${response.statusText}`);
+            }
+            
+            const turno = await response.json();
+            mostrarDetallesTurno(turno);
             
         } catch (error) {
-            showAlert("Error al cargar empleados: " + error.message, true);
+            showAlert("Error al cargar detalles del turno: " + error.message, true);
             console.error(error);
         }
-    });
-
-    function cargarEmpleadosParaValidacion(empleados) {
-        const container = document.getElementById("validation-empleados-list");
-        container.innerHTML = `
-            <div class="validation-empleados-list">
-                ${empleados.map(empleado => `
-                    <div class="validation-empleado-item">
-                        <input type="checkbox" value="${empleado.id_empleado}" id="emp-${empleado.id_empleado}">
-                        <label for="emp-${empleado.id_empleado}" class="validation-empleado-info">
-                            <div class="validation-empleado-name">${empleado.nombre} ${empleado.apellido || ''}</div>
-                            <div class="validation-empleado-role">${empleado.puesto || 'Empleado'}</div>
-                        </label>
+    }
+    
+    function mostrarDetallesTurno(turno) {
+        // Create a detailed popup for turno details
+        const detailsHTML = `
+            <div id="turno-details-popup" class="popup show">
+                <h3>Detalles del Turno #${turno.id_turno}</h3>
+                <div class="popup-content">
+                    <div class="turno-details">
+                        <div class="detail-row">
+                            <strong>Estado:</strong> 
+                            <span class="validation-status ${turno.estado}">${turno.estado}</span>
+                        </div>
+                        <div class="detail-row">
+                            <strong>Fecha:</strong> ${new Date(turno.fecha).toLocaleDateString('es-ES')}
+                        </div>
+                        <div class="detail-row">
+                            <strong>Horario:</strong> ${turno.hora_inicio} - ${turno.hora_fin}
+                        </div>
+                        <div class="detail-row">
+                            <strong>Cliente:</strong> ${turno.cliente_nombre ? `${turno.cliente_nombre} ${turno.cliente_apellido}` : 'No asignado'}
+                        </div>
+                        <div class="detail-row">
+                            <strong>Email:</strong> ${turno.cliente_email || 'N/A'}
+                        </div>
+                        <div class="detail-row">
+                            <strong>Servicios:</strong> ${turno.servicios}
+                        </div>
+                        <div class="detail-row">
+                            <strong>Empleados:</strong> ${turno.empleados}
+                        </div>
+                        <div class="detail-row">
+                            <strong>Precio Total:</strong> $${turno.precio_total}
+                        </div>
+                        <div class="detail-row">
+                            <strong>Fecha de Creación:</strong> ${turno.fecha_creacion ? new Date(turno.fecha_creacion).toLocaleString('es-ES') : 'N/A'}
+                        </div>
                     </div>
-                `).join('')}
+                    
+                    ${turno.estado === 'reservado' ? `
+                        <div class="turno-actions">
+                            <button class="action-btn confirm-btn" onclick="confirmarTurno(${turno.id_turno})">
+                                Confirmar Turno
+                            </button>
+                            <button class="action-btn cancel-btn" onclick="cancelarTurnoAdmin(${turno.id_turno})">
+                                Cancelar Turno
+                            </button>
+                        </div>
+                    ` : ''}
+                </div>
+                <div class="popup-actions">
+                    <button type="button" class="popup-btn secondary" onclick="cerrarDetallesTurno()">Cerrar</button>
+                </div>
             </div>
         `;
+        
+        // Remove existing popup if any
+        const existingPopup = document.getElementById('turno-details-popup');
+        if (existingPopup) {
+            existingPopup.remove();
+        }
+        
+        // Add to body
+        document.body.insertAdjacentHTML('beforeend', detailsHTML);
     }
-
-    // ==================== GESTIÓN DE SERVICIOS PARA COMBOS ====================
-    let serviciosComboSeleccionados = [];
-
-    // Cargar servicios en el pop-up de combos
-    async function cargarServiciosCombo() {
+    
+    // Function to close turno details popup
+    window.cerrarDetallesTurno = function() {
+        const popup = document.getElementById('turno-details-popup');
+        if (popup) {
+            popup.remove();
+        }
+    }
+    
+    // Function to confirm turno from details popup
+    window.confirmarTurno = async function(turnoId) {
         try {
-            const response = await fetch(`${API_BASE_URL}/servicios`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const servicios = await handleFetchError(response);
-            
-            const container = document.getElementById('servicios-combo-lista');
-            container.innerHTML = '';
-            
-            // Agrupar servicios por categoría
-            const serviciosPorCategoria = servicios.reduce((acc, servicio) => {
-                if (!acc[servicio.categoria]) {
-                    acc[servicio.categoria] = [];
+            const response = await fetch(`${API_BASE_URL}/turnos/${turnoId}/confirmar`, {
+                method: 'POST',
+                headers: { 
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json"
                 }
-
-                acc[servicio.categoria].push(servicio);
-                return acc;
-            }, {});
-            
-            // Crear checkboxes por categoría
-            Object.keys(serviciosPorCategoria).forEach(categoria => {
-                const categoriaDiv = document.createElement('div');
-                categoriaDiv.className = 'categoria-servicios';
-                categoriaDiv.innerHTML = `<h4>${categoria}</h4>`;
-                
-                serviciosPorCategoria[categoria].forEach(servicio => {
-                    const servicioDiv = document.createElement('div');
-                    servicioDiv.className = 'servicio-checkbox';
-                    servicioDiv.innerHTML = `
-                        <label>
-                            <input type="checkbox" value="${servicio.id_servicio}" id="combo-serv-${servicio.id_servicio}">
-                            ${servicio.nombre} (${servicio.duracion} min)
-                        </label>
-                    `;
-                    categoriaDiv.appendChild(servicioDiv);
-                });
-                
-                container.appendChild(categoriaDiv);
             });
+            
+            if (!response.ok) {
+                throw new Error(`Error ${response.status}: ${response.statusText}`);
+            }
+            
+            showAlert("Turno confirmado exitosamente", false);
+            cerrarDetallesTurno();
+            
+            // Refresh historial if it's open
+            const historialPopup = document.getElementById("historial-turnos-popup");
+            if (historialPopup && !historialPopup.classList.contains("hidden")) {
+                const activeFilter = document.querySelector('.filter-btn.active');
+                if (activeFilter) {
+                    const estado = activeFilter.textContent.toLowerCase().replace('dos', 'do').replace('s', '');
+                    await cargarHistorialTurnos(estado === 'todo' ? 'todos' : estado);
+                }
+            }
         } catch (error) {
-            showAlert('Error al cargar servicios: ' + error.message, true);
+            console.error('Error al confirmar turno:', error);
+            showAlert(`Error al confirmar turno: ${error.message}`, true);
         }
-    }
-
-    // Abrir pop-up de selección de servicios para combo
-    document.getElementById('btn-seleccionar-servicios-combo')?.addEventListener('click', async () => {
-        await cargarServiciosCombo();
-        
-        // Marcar servicios previamente seleccionados
-        serviciosComboSeleccionados.forEach(id => {
-            const checkbox = document.getElementById(`combo-serv-${id}`);
-            if (checkbox) checkbox.checked = true;
-        });
-        
-        document.getElementById('servicios-combo-popup').classList.remove('hidden');
-    });
-
-    // Cerrar pop-up de servicios combo
-    document.getElementById('cerrar-servicios-combo-popup')?.addEventListener('click', () => {
-        document.getElementById('servicios-combo-popup').classList.add('hidden');
-    });
-
-    // Guardar selección de servicios combo
-    document.getElementById('guardar-servicios-combo-popup')?.addEventListener('click', () => {
-        const checkboxes = document.querySelectorAll('#servicios-combo-lista input[type="checkbox"]:checked');
-        serviciosComboSeleccionados = Array.from(checkboxes).map(cb => parseInt(cb.value));
-        
-        // Actualizar visualización
-        const container = document.getElementById('servicios-combo-seleccionados');
-        if (serviciosComboSeleccionados.length > 0) {
-            container.innerHTML = `
-                <div class="servicios-seleccionados">
-                    <h5>Servicios seleccionados:</h5>
-                    ${Array.from(checkboxes).map(cb => `
-                        <span class="servicio-tag">${cb.parentElement.textContent.trim()}</span>
-                    `).join('')}
-                </div>
-            `;
-        } else {
-            container.innerHTML = '<p class="no-selection">No hay servicios seleccionados</p>';
-        }
-        
-        document.getElementById('servicios-combo-popup').classList.add('hidden');
-    });
+    };
 
     // ==================== FIN DEL DOCUMENTO ====================
 });
