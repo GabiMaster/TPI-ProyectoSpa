@@ -132,6 +132,13 @@ async function cargarTurnosAsignados() {
         turnos.forEach(turno => {
             console.log('Turno recibido:', turno); // DEBUG: ver qué datos llegan
             const fechaFormateada = new Date(turno.fecha).toLocaleDateString('es-ES');
+            
+            // Calcular si se puede cancelar (más de 24 horas de anticipación)
+            const fechaTurno = new Date(turno.fecha + ' ' + turno.hora);
+            const ahora = new Date();
+            const horasHastaTurno = (fechaTurno - ahora) / (1000 * 60 * 60);
+            const puedeCancel = horasHastaTurno > 24 && turno.estado !== 'completado' && turno.estado !== 'cancelado';
+            
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td>${fechaFormateada}</td>
@@ -140,7 +147,11 @@ async function cargarTurnosAsignados() {
                 <td>${turno.servicio}</td>
                 <td>
                     <button onclick="confirmarTurno(${turno.id_turno})" class="btn-confirmar">Confirmar</button>
-                    <button onclick="cancelarTurno(${turno.id_turno})" class="btn-cancelar">Cancelar</button>
+                    <button onclick="cancelarTurno(${turno.id_turno})" class="btn-cancelar" 
+                            ${!puedeCancel ? 'disabled title="No se puede cancelar (menos de 24hs o turno completado/cancelado)"' : ''}>
+                        Cancelar
+                    </button>
+                    ${!puedeCancel ? '<small style="color: #666; display: block;">Solo se puede cancelar con +24hs</small>' : ''}
                 </td>
             `;
             tablaBody.appendChild(row);
@@ -194,7 +205,7 @@ async function cancelarTurno(idTurno) {
     }
     
     try {
-        const response = await fetch(`https://9plm87v2-3000.brs.devtunnels.ms/api/auth/cancelar-turno/${idTurno}`, {
+        const response = await fetch(`/api/turnos/cancelar/${idTurno}`, {
             method: 'PUT',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -205,14 +216,33 @@ async function cancelarTurno(idTurno) {
         const data = await response.json();
         
         if (response.ok) {
-            alert('Turno cancelado exitosamente');
+            // Mostrar mensaje de éxito más detallado
+            let mensaje = 'Turno cancelado exitosamente';
+            if (data.horasDeAnticipacion) {
+                mensaje += `\n\nCancelado con ${data.horasDeAnticipacion} horas de anticipación.`;
+            }
+            alert(mensaje);
             cargarTurnosAsignados(); // Recargar la tabla
         } else {
-            alert(data.error || 'Error al cancelar turno');
+            // Mostrar mensaje de error específico y mejorado
+            let errorMsg = data.error || 'Error al cancelar turno';
+            
+            if (errorMsg.includes('24 horas')) {
+                errorMsg += '\n\n⏰ Los turnos solo pueden cancelarse con más de 24 horas de anticipación.';
+                if (data.horasRestantes) {
+                    errorMsg += `\nTiempo restante: ${data.horasRestantes} horas.`;
+                }
+            } else if (errorMsg.includes('permisos')) {
+                errorMsg = '🚫 No tienes permisos para cancelar este turno.';
+            } else if (errorMsg.includes('estado')) {
+                errorMsg = '❌ Este turno no se puede cancelar en su estado actual.';
+            }
+            
+            alert(errorMsg);
         }
     } catch (error) {
         console.error('Error:', error);
-        alert('Error al cancelar turno');
+        alert('Error de conexión al cancelar turno');
     }
 }
 

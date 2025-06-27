@@ -36,7 +36,7 @@ document.addEventListener("DOMContentLoaded", () => {
                             <p><strong>Servicios:</strong> ${t.servicios}</p>
                             <p><strong>Empleados:</strong> ${t.empleados || 'Por asignar'}</p>
                             <p><strong>Duración:</strong> ${t.duracion_total || 0} min</p>
-                            <p><strong>Precio:</strong> $${parseFloat(t.precio).toFixed(2)}</p>
+                            <p><strong>Precio:</strong> $${parseFloat(t.precio_total).toFixed(2)}</p>
                             <button type="button" class="seleccionar-turno-btn">Seleccionar</button>
                         `;
                         
@@ -81,7 +81,7 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementById('resumen-hora').textContent = `${turnoSeleccionado.hora.slice(0,5)} - ${turnoSeleccionado.hora_fin ? turnoSeleccionado.hora_fin.slice(0,5) : '-'}`;
             document.getElementById('resumen-servicios').textContent = turnoSeleccionado.servicios;
             document.getElementById('resumen-duracion').textContent = turnoSeleccionado.duracion_total || 0;
-            document.getElementById('resumen-precio').textContent = parseFloat(turnoSeleccionado.precio).toFixed(2);
+            document.getElementById('resumen-precio').textContent = parseFloat(turnoSeleccionado.precio_total).toFixed(2);
             
             // Mostrar botón de continuar
             const continueButton = document.getElementById('continue-button');
@@ -131,7 +131,7 @@ document.addEventListener("DOMContentLoaded", () => {
             hora: turnoSeleccionado.hora,
             hora_fin: turnoSeleccionado.hora_fin,
             servicios: turnoSeleccionado.servicios,
-            precio: turnoSeleccionado.precio,
+            precio: turnoSeleccionado.precio_total,
             duracionTotal: turnoSeleccionado.duracion_total || 0
         });
         

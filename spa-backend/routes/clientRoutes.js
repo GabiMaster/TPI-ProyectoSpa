@@ -56,6 +56,30 @@ router.post('/register', async (req, res) => {
     }
 });
 
+// Obtener perfil del cliente autenticado (debe ir ANTES de /:id)
+router.get('/perfil', verifyToken, async (req, res) => {
+    try {
+        const clienteId = req.user.id;
+        
+        console.log('Obteniendo perfil para cliente:', clienteId);
+        
+        const [cliente] = await db.query(
+            'SELECT id_cliente, nombre, apellido, email, telefono FROM cliente WHERE id_cliente = ?',
+            [clienteId]
+        );
+        
+        if (cliente.length === 0) {
+            return res.status(404).json({ error: 'Cliente no encontrado' });
+        }
+        
+        res.json(cliente[0]);
+        
+    } catch (error) {
+        console.error('Error al obtener perfil de cliente:', error);
+        res.status(500).json({ error: 'Error interno del servidor' });
+    }
+});
+
 // Obtener datos de un cliente específico
 router.get('/:id', verifyToken, async (req, res) => {
     try {

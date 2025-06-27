@@ -2,11 +2,12 @@ const express = require('express');
 const db = require('../db');
 const router = express.Router();
 const { body, validationResult } = require('express-validator');
+const verifyToken = require('../middleware/verifyToken');
 
 // Validaciones para los combos
 const comboValidations = [
     body('nombre').trim().notEmpty().withMessage('El nombre es requerido'),
-    body('descripcion').trim().notEmpty().withMessage('La descripción es requerida'),
+    body('descripcion').optional().trim(),
     body('precio_total').isFloat({ min: 0 }).withMessage('El precio debe ser un número positivo'),
     body('servicios').isArray().withMessage('Debe incluir una lista de servicios'),
     body('servicios.*').isInt().withMessage('Cada servicio debe tener un ID válido')
@@ -52,7 +53,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Crear un nuevo combo
-router.post('/', comboValidations, async (req, res) => {
+router.post('/', verifyToken, comboValidations, async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
@@ -61,10 +62,13 @@ router.post('/', comboValidations, async (req, res) => {
     const { nombre, descripcion, precio_total, servicios } = req.body;
 
     try {
+        // Preparar la descripción (puede ser null o vacía)
+        const descCombo = descripcion && descripcion.trim() ? descripcion.trim() : null;
+        
         // Insertar el nuevo combo en la tabla
         const [result] = await db.query(
             'INSERT INTO combo (nombre, descripcion, precio_total) VALUES (?, ?, ?)',
-            [nombre, descripcion, precio_total]
+            [nombre, descCombo, precio_total]
         );
         const comboId = result.insertId;
 
@@ -87,7 +91,7 @@ router.post('/', comboValidations, async (req, res) => {
 });
 
 // Modificar un combo existente
-router.put('/:id', comboValidations, async (req, res) => {
+router.put('/:id', verifyToken, comboValidations, async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
@@ -103,10 +107,13 @@ router.put('/:id', comboValidations, async (req, res) => {
             return res.status(404).json({ error: 'El combo no existe.' });
         }
 
+        // Preparar la descripción (puede ser null o vacía)
+        const descCombo = descripcion && descripcion.trim() ? descripcion.trim() : null;
+
         // Actualizar datos del combo
         await db.query(
             'UPDATE combo SET nombre = ?, descripcion = ?, precio_total = ? WHERE id_combo = ?',
-            [nombre, descripcion, precio_total, id]
+            [nombre, descCombo, precio_total, id]
         );
 
         // Actualizar los servicios del combo
@@ -126,7 +133,7 @@ router.put('/:id', comboValidations, async (req, res) => {
 });
 
 // Eliminar un combo
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', verifyToken, async (req, res) => {
     const { id } = req.params;
 
     try {

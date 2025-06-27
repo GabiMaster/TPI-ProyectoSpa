@@ -2,12 +2,12 @@ const express = require('express');
 const db = require('../db');
 const router = express.Router();
 const { body, validationResult } = require('express-validator');
+const verifyToken = require('../middleware/verifyToken');
 
 // Validaciones comunes
 const servicioValidations = [
     body('nombre').trim().notEmpty().withMessage('El nombre es requerido'),
     body('duracion').isInt({ min: 1 }).withMessage('Duración debe ser un número positivo'),
-    body('precio').isFloat({ min: 0 }).withMessage('Precio debe ser un número positivo'),
     body('categoria').isIn(['Masajes', 'Belleza', 'Tratamientos Faciales', 'Tratamientos Corporales', 'Servicios Grupales'])
         .withMessage('Categoría no válida')
 ];
@@ -15,10 +15,9 @@ const servicioValidations = [
 // Obtener todos los servicios
 router.get('/', async (req, res) => {
     try {
-        const [rows] = await db.query('SELECT * FROM servicio ORDER BY categoria, nombre');
+        const [rows] = await db.query('SELECT id_servicio, nombre, descripcion, duracion, categoria FROM servicio ORDER BY categoria, nombre');
         const servicios = rows.map(servicio => ({
             ...servicio,
-            precio: parseFloat(servicio.precio) || 0.00,
             duracion: parseInt(servicio.duracion) || 0
         }));
         res.json(servicios);
@@ -35,7 +34,7 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
     const { id } = req.params;
     try {
-        const [rows] = await db.query('SELECT * FROM servicio WHERE id_servicio = ?', [id]);
+        const [rows] = await db.query('SELECT id_servicio, nombre, descripcion, duracion, categoria FROM servicio WHERE id_servicio = ?', [id]);
         
         if (rows.length === 0) {
             return res.status(404).json({ error: 'El servicio no existe.' });
@@ -43,7 +42,6 @@ router.get('/:id', async (req, res) => {
         
         const servicio = {
             ...rows[0],
-            precio: parseFloat(rows[0].precio),
             duracion: parseInt(rows[0].duracion)
         };
         
@@ -58,13 +56,13 @@ router.get('/:id', async (req, res) => {
 });
 
 // Crear un nuevo servicio
-router.post('/', servicioValidations, async (req, res) => {
+router.post('/', verifyToken, servicioValidations, async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
     }
 
-    const { nombre, descripcion, duracion, precio, categoria } = req.body;
+    const { nombre, descripcion, duracion, categoria } = req.body;
 
     try {
         // Validación adicional para servicios grupales
@@ -82,13 +80,13 @@ router.post('/', servicioValidations, async (req, res) => {
         }
 
         const [result] = await db.query(
-            'INSERT INTO servicio (nombre, descripcion, duracion, precio, categoria) VALUES (?, ?, ?, ?, ?)',
-            [nombre, descripcion || null, duracion, precio, categoria]
+            'INSERT INTO servicio (nombre, descripcion, duracion, categoria) VALUES (?, ?, ?, ?)',
+            [nombre, descripcion || null, duracion, categoria]
         );
 
         // Obtener el servicio recién creado para devolverlo
         const [newService] = await db.query(
-            'SELECT * FROM servicio WHERE id_servicio = ?',
+            'SELECT id_servicio, nombre, descripcion, duracion, categoria FROM servicio WHERE id_servicio = ?',
             [result.insertId]
         );
 
@@ -96,7 +94,6 @@ router.post('/', servicioValidations, async (req, res) => {
             message: 'Servicio creado exitosamente',
             servicio: {
                 ...newService[0],
-                precio: parseFloat(newService[0].precio),
                 duracion: parseInt(newService[0].duracion)
             }
         });
@@ -110,14 +107,14 @@ router.post('/', servicioValidations, async (req, res) => {
 });
 
 // Actualizar un servicio
-router.put('/:id', servicioValidations, async (req, res) => {
+router.put('/:id', verifyToken, servicioValidations, async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
     }
 
     const { id } = req.params;
-    const { nombre, descripcion, duracion, precio, categoria } = req.body;
+    const { nombre, descripcion, duracion, categoria } = req.body;
 
     try {
         // Verificar que el servicio existe
@@ -145,13 +142,13 @@ router.put('/:id', servicioValidations, async (req, res) => {
         }
 
         const [result] = await db.query(
-            'UPDATE servicio SET nombre = ?, descripcion = ?, duracion = ?, precio = ?, categoria = ? WHERE id_servicio = ?',
-            [nombre, descripcion || null, duracion, precio, categoria, id]
+            'UPDATE servicio SET nombre = ?, descripcion = ?, duracion = ?, categoria = ? WHERE id_servicio = ?',
+            [nombre, descripcion || null, duracion, categoria, id]
         );
 
         // Obtener el servicio actualizado
         const [updatedService] = await db.query(
-            'SELECT * FROM servicio WHERE id_servicio = ?',
+            'SELECT id_servicio, nombre, descripcion, duracion, categoria FROM servicio WHERE id_servicio = ?',
             [id]
         );
 
@@ -159,7 +156,6 @@ router.put('/:id', servicioValidations, async (req, res) => {
             message: 'Servicio actualizado exitosamente',
             servicio: {
                 ...updatedService[0],
-                precio: parseFloat(updatedService[0].precio),
                 duracion: parseInt(updatedService[0].duracion)
             }
         });
@@ -173,7 +169,7 @@ router.put('/:id', servicioValidations, async (req, res) => {
 });
 
 // Eliminar un servicio
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', verifyToken, async (req, res) => {
     const { id } = req.params;
     
     try {
@@ -204,9 +200,11 @@ router.delete('/:id', async (req, res) => {
         res.json({ 
             message: 'Servicio eliminado exitosamente',
             servicioEliminado: {
-                ...existing[0],
-                precio: parseFloat(existing[0].precio),
-                duracion: parseInt(existing[0].duracion)
+                id_servicio: existing[0].id_servicio,
+                nombre: existing[0].nombre,
+                descripcion: existing[0].descripcion,
+                duracion: parseInt(existing[0].duracion),
+                categoria: existing[0].categoria
             }
         });
     } catch (err) {

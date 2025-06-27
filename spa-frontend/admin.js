@@ -1,6 +1,8 @@
 document.addEventListener("DOMContentLoaded", () => {
+    console.log('🚀 ADMIN.JS RECARGADO - Timestamp:', new Date().toISOString());
+    
     // Configuración base
-    const API_BASE_URL = 'https://9plm87v2-3000.brs.devtunnels.ms/api';
+    const API_BASE_URL = 'http://localhost:3000/api';
     const API_ADMIN_BASE_URL = `${API_BASE_URL}/admin`;
     const token = localStorage.getItem("token");
 
@@ -33,8 +35,80 @@ document.addEventListener("DOMContentLoaded", () => {
         form.dataset.id = "";
     };
 
-    const showAlert = (message, isError = false) => {
-        alert(`${isError ? 'Error: ' : ''}${message}`);
+    const showAlert = (message, isError = false, details = null) => {
+        showNotification(message, isError ? 'error' : 'success', details);
+    };
+
+    // Sistema de notificaciones mejorado
+    const showNotification = (message, type = 'info', details = null) => {
+        const container = document.getElementById('notification-container');
+        if (!container) return;
+
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        
+        const icons = {
+            success: '?',
+            error: '❌',
+            warning: '⚠️',
+            conflict: '⚡',
+            info: 'ℹ️'
+        };
+
+        const titles = {
+            success: 'Éxito',
+            error: 'Error',
+            warning: 'Advertencia',
+            conflict: 'Conflicto de Horarios',
+            info: 'Información'
+        };
+
+        let detailsHtml = '';
+        if (details && type === 'conflict') {
+            detailsHtml = `
+                <div class="notification-details">
+                    <h4>Empleados con conflictos:</h4>
+                    ${details.conflictos?.map(conflicto => `
+                        <div class="conflict-employee">
+                            <div class="conflict-employee-name">${conflicto.empleado}</div>
+                            <div class="conflict-turns">
+                                Horario solicitado: ${details.horaInicio || 'N/A'} - ${details.horaFin || 'N/A'}
+                            </div>
+                            ${conflicto.turnosConflictivos?.map(turno => `
+                                <div class="conflict-turn">
+                                    Turno ${turno.id_turno}: ${turno.hora} - ${turno.hora_fin} (${turno.estado})
+                                </div>
+                            `).join('') || ''}
+                        </div>
+                    `).join('') || ''}
+                </div>
+            `;
+        }
+
+        notification.innerHTML = `
+            <div class="notification-header">
+                <div class="notification-icon">${icons[type]}</div>
+                <div class="notification-title">${titles[type]}</div>
+                <button class="notification-close" onclick="this.closest('.notification').remove()">×</button>
+            </div>
+            <div class="notification-message">${message}</div>
+            ${detailsHtml}
+        `;
+
+        container.appendChild(notification);
+
+        // Mostrar animación
+        setTimeout(() => notification.classList.add('show'), 100);
+
+        // Auto-remover después de un tiempo (más tiempo para errores)
+        const autoRemoveTime = type === 'error' || type === 'conflict' ? 8000 : 4000;
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.style.opacity = '0';
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => notification.remove(), 300);
+            }
+        }, autoRemoveTime);
     };
 
     const handleFetchError = async (response) => {
@@ -51,6 +125,49 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         return response.json();
     };
+
+    // ==================== FUNCIONES AUXILIARES ====================
+    
+    // Función para calcular precio sugerido basado en duración
+    function calcularPrecioSugerido(servicios) {
+        if (!servicios || servicios.length === 0) return 0;
+        
+        // Precio base por minuto (puedes ajustar este valor)
+        const precioPorMinuto = 1.5; // $1.5 por minuto
+        
+        let duracionTotal = 0;
+        servicios.forEach(servicio => {
+            duracionTotal += servicio.duracion || 0;
+        });
+        
+        // Calcular precio base
+        let precioSugerido = duracionTotal * precioPorMinuto;
+        
+        // Aplicar descuento por múltiples servicios
+        if (servicios.length > 1) {
+            precioSugerido *= 0.9; // 10% de descuento por combo
+        }
+        
+        // Redondear a múltiplos de 5 para precios más "amigables"
+        precioSugerido = Math.round(precioSugerido / 5) * 5;
+        
+        console.log(`💰 Precio sugerido calculado: ${duracionTotal} min × $${precioPorMinuto} = $${precioSugerido}`);
+        return precioSugerido;
+    }
+    
+    // Función para actualizar el precio sugerido en el formulario de turnos
+    function actualizarPrecioSugerido() {
+        const precioInput = document.getElementById('turno-precio');
+        if (precioInput && serviciosSeleccionados.length > 0) {
+            const precioSugerido = calcularPrecioSugerido(serviciosSeleccionados);
+            
+            // Solo actualizar si el campo está vacío o tiene valor 0
+            if (!precioInput.value || precioInput.value === '0') {
+                precioInput.value = precioSugerido;
+                console.log(`💡 Precio sugerido actualizado: $${precioSugerido}`);
+            }
+        }
+    }
 
     // ==================== GESTIÓN DE SERVICIOS ====================
     const serviceFormContainer = document.getElementById("service-form-container");
@@ -80,7 +197,6 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementById("nombre").value = serviceData.nombre;
             document.getElementById("descripcion").value = serviceData.descripcion || "";
             document.getElementById("duracion").value = serviceData.duracion;
-            document.getElementById("precio").value = serviceData.precio;
             document.getElementById("categoria").value = serviceData.categoria;
             toggleVisibility(serviceFormContainer, true);
         } catch (error) {
@@ -129,7 +245,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (confirm(`¿Eliminar servicio ID ${serviceId}?`)) {
             try {
-                const response = await fetch(`${API_BASE_URL}/servicios/${serviceId}`, {
+                const deleteUrl = `${API_BASE_URL}/servicios/${serviceId}`;
+                console.log('🗑️ Eliminando servicio:', deleteUrl);
+                
+                const response = await fetch(deleteUrl, {
                     method: "DELETE",
                     headers: { "Authorization": `Bearer ${token}` }
                 });
@@ -137,7 +256,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 showAlert(result.message || "Servicio eliminado exitosamente");
             } catch (error) {
                 showAlert("Error al eliminar: " + error.message, true);
-                console.error(error);
+                console.error('❌ Error completo:', error);
             }
         }
     });
@@ -155,6 +274,9 @@ document.addEventListener("DOMContentLoaded", () => {
         comboFormTitle.textContent = "Añadir Combo";
         comboForm.dataset.action = "add";
         resetForm(comboForm);
+        // Limpiar servicios seleccionados
+        serviciosComboSeleccionados = [];
+        document.getElementById('servicios-combo-seleccionados').innerHTML = '<p class="no-selection">No hay servicios seleccionados</p>';
         toggleVisibility(comboFormContainer, true);
     });
 
@@ -174,7 +296,25 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementById("combo-nombre").value = comboData.nombre;
             document.getElementById("combo-descripcion").value = comboData.descripcion || "";
             document.getElementById("combo-precio").value = comboData.precio_total;
-            document.getElementById("combo-servicios").value = comboData.servicios.map(s => s.id_servicio).join(", ");
+            
+            // Cargar servicios seleccionados del combo
+            serviciosComboSeleccionados = comboData.servicios ? comboData.servicios.map(s => s.id_servicio) : [];
+            
+            // Actualizar visualización de servicios seleccionados
+            const container = document.getElementById('servicios-combo-seleccionados');
+            if (serviciosComboSeleccionados.length > 0 && comboData.servicios) {
+                container.innerHTML = `
+                    <div class="servicios-seleccionados">
+                        <h5>Servicios seleccionados:</h5>
+                        ${comboData.servicios.map(servicio => `
+                            <span class="servicio-tag">${servicio.nombre} (${servicio.duracion} min)</span>
+                        `).join('')}
+                    </div>
+                `;
+            } else {
+                container.innerHTML = '<p class="no-selection">No hay servicios seleccionados</p>';
+            }
+            
             toggleVisibility(comboFormContainer, true);
         } catch (error) {
             showAlert("Error al obtener combo: " + error.message, true);
@@ -188,7 +328,21 @@ document.addEventListener("DOMContentLoaded", () => {
         submitButton.disabled = true;
 
         try {
-            const formData = Object.fromEntries(new FormData(e.target));
+            const formData = new FormData(e.target);
+            
+            // Transformar los datos al formato esperado por el backend
+            const data = {
+                nombre: formData.get('combo-nombre'),
+                descripcion: formData.get('combo-descripcion'),
+                precio_total: parseFloat(formData.get('combo-precio')),
+                servicios: serviciosComboSeleccionados
+            };
+
+            // Validar que hay servicios seleccionados
+            if (data.servicios.length === 0) {
+                throw new Error('Debe seleccionar al menos un servicio para el combo');
+            }
+
             const action = comboForm.dataset.action;
             let endpoint = `${API_BASE_URL}/combos`;
             let method = "POST";
@@ -196,18 +350,23 @@ document.addEventListener("DOMContentLoaded", () => {
                 endpoint = `${API_BASE_URL}/combos/${comboForm.dataset.comboId}`;
                 method = "PUT";
             }
+            
             const response = await fetch(endpoint, {
                 method,
                 headers: {
                     "Content-Type": "application/json",
                     "Authorization": `Bearer ${token}`
                 },
-                body: JSON.stringify(formData)
+                body: JSON.stringify(data)
             });
 
             const result = await handleFetchError(response);
-            showAlert(result.message || "Operación exitosa");
+            showAlert(result.message || "Combo guardado exitosamente");
             toggleVisibility(comboFormContainer, false);
+            resetForm(comboForm);
+            // Limpiar servicios seleccionados
+            serviciosComboSeleccionados = [];
+            document.getElementById('servicios-combo-seleccionados').innerHTML = '';
         } catch (error) {
             showAlert("Error: " + error.message, true);
             console.error(error);
@@ -237,6 +396,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document.getElementById("cancel-combo")?.addEventListener("click", () => {
         toggleVisibility(comboFormContainer, false);
+        resetForm(comboForm);
+        // Limpiar servicios seleccionados
+        serviciosComboSeleccionados = [];
+        document.getElementById('servicios-combo-seleccionados').innerHTML = '';
     });
 
     // ==================== GESTIÓN DE TURNOS ====================
@@ -246,55 +409,115 @@ document.addEventListener("DOMContentLoaded", () => {
     const editTurnoBtn = document.getElementById("edit-turno");
     const deleteTurnoBtn = document.getElementById("delete-turno");
 
-    // Variable global para servicios seleccionados
+    // Variable global para servicios seleccionados - almacenar objetos completos
     let serviciosSeleccionados = [];
+    let serviciosDisponibles = []; // Cache de todos los servicios disponibles
 
     // Popup de selección de servicios
     document.getElementById('btn-seleccionar-servicios').addEventListener('click', async () => {
-        document.getElementById('servicios-popup').classList.remove('hidden');
-        const res = await fetch(`${API_BASE_URL}/servicios`, { headers: { "Authorization": `Bearer ${token}` } });
-        const servicios = await res.json();
+        try {
+            document.getElementById('servicios-popup').classList.remove('hidden');
+            const res = await fetch(`${API_BASE_URL}/servicios`, { headers: { "Authorization": `Bearer ${token}` } });
+            const servicios = await res.json();
 
-        // Agrupar por categoría
-        const categorias = {};
-        servicios.forEach(s => {
-            if (!categorias[s.categoria]) categorias[s.categoria] = [];
-            categorias[s.categoria].push(s);
-        });
+            // Guardar cache de servicios disponibles
+            serviciosDisponibles = servicios;
 
-        const contenedor = document.getElementById('servicios-categorias');
-        contenedor.innerHTML = '';
-        Object.entries(categorias).forEach(([cat, lista]) => {
-            const catDiv = document.createElement('div');
-            catDiv.innerHTML = `<h4>${cat}</h4>`;
-            lista.forEach(s => {
-                const btn = document.createElement('button');
-                btn.type = 'button';
-                btn.textContent = `${s.nombre} (${s.duracion} min - $${parseFloat(s.precio).toFixed(2)})`;
-                btn.className = 'servicio-btn' + (serviciosSeleccionados.includes(s.id_servicio) ? ' selected' : '');
-                btn.onclick = () => {
-                    if (serviciosSeleccionados.includes(s.id_servicio)) {
-                        serviciosSeleccionados = serviciosSeleccionados.filter(id => id !== s.id_servicio);
+            // Agrupar por categoría
+            const categorias = {};
+            servicios.forEach(s => {
+                if (!categorias[s.categoria]) categorias[s.categoria] = [];
+                categorias[s.categoria].push(s);
+            });
+
+            const contenedor = document.getElementById('servicios-categorias');
+            contenedor.innerHTML = '';
+            
+            Object.entries(categorias).forEach(([categoria, lista]) => {
+                const categoriaDiv = document.createElement('div');
+                categoriaDiv.className = 'categoria-servicios';
+                
+                categoriaDiv.innerHTML = `
+                    <h4 class="categoria-titulo">${categoria}</h4>
+                    <div class="categoria-items">
+                        ${lista.map(servicio => `
+                            <button type="button" 
+                                    class="servicio-btn ${serviciosSeleccionados.find(s => s.id_servicio === servicio.id_servicio) ? 'selected' : ''}" 
+                                    data-servicio-id="${servicio.id_servicio}">
+                                <div class="servicio-info">
+                                    <div>
+                                        <div class="servicio-nombre">${servicio.nombre}</div>
+                                        <div class="servicio-detalles">${servicio.descripcion || 'Servicio de spa profesional'}</div>
+                                    </div>
+                                    <div class="servicio-duracion-container">
+                                        <div class="servicio-duracion">${servicio.duracion} min</div>
+                                    </div>
+                                </div>
+                            </button>
+                        `).join('')}
+                    </div>
+                `;
+                
+                contenedor.appendChild(categoriaDiv);
+            });
+
+            // Agregar event listeners para selección
+            contenedor.querySelectorAll('.servicio-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const servicioId = parseInt(btn.dataset.servicioId);
+                    const servicio = servicios.find(s => s.id_servicio === servicioId);
+                    
+                    const yaSeleccionado = serviciosSeleccionados.find(s => s.id_servicio === servicioId);
+                    if (yaSeleccionado) {
+                        serviciosSeleccionados = serviciosSeleccionados.filter(s => s.id_servicio !== servicioId);
                         btn.classList.remove('selected');
                     } else {
-                        serviciosSeleccionados.push(s.id_servicio);
+                        serviciosSeleccionados.push(servicio);
                         btn.classList.add('selected');
                     }
                     renderServiciosSeleccionados();
-                };
-                catDiv.appendChild(btn);
+                });
             });
-            contenedor.appendChild(catDiv);
-        });
+            
+        } catch (error) {
+            showAlert('Error al cargar servicios: ' + error.message, true);
+            console.error(error);
+        }
     });
 
     document.getElementById('guardar-servicios-popup').onclick = () => {
         document.getElementById('servicios-popup').classList.add('hidden');
         renderServiciosSeleccionados();
     };
+    
     document.getElementById('cerrar-servicios-popup').onclick = () => {
         document.getElementById('servicios-popup').classList.add('hidden');
     };
+
+    document.getElementById('guardar-empleados-popup').onclick = () => {
+        document.getElementById('empleados-popup').classList.add('hidden');
+        renderEmpleadosSeleccionados();
+    };
+    
+    document.getElementById('cerrar-empleados-popup').onclick = () => {
+        document.getElementById('empleados-popup').classList.add('hidden');
+    };
+
+    // Cerrar pop-ups al hacer clic fuera de ellos
+    document.addEventListener('click', (e) => {
+        const popups = [
+            'servicios-popup', 'empleados-popup', 'schedule-popup', 
+            'validation-popup', 'admins-popup', 'employees-popup',
+            'available-turnos-popup', 'historial-turnos-popup'
+        ];
+        
+        popups.forEach(popupId => {
+            const popup = document.getElementById(popupId);
+            if (popup && e.target === popup) {
+                popup.classList.add('hidden');
+            }
+        });
+    });
 
     function renderServiciosSeleccionados() {
         const div = document.getElementById('servicios-seleccionados');
@@ -302,7 +525,10 @@ document.addEventListener("DOMContentLoaded", () => {
             div.innerHTML = '<em>No hay servicios seleccionados</em>';
             return;
         }
-        div.innerHTML = 'Seleccionados: ' + serviciosSeleccionados.join(', ');
+        div.innerHTML = 'Seleccionados: ' + serviciosSeleccionados.map(s => s.nombre).join(', ');
+        
+        // Actualizar precio sugerido cuando cambien los servicios
+        actualizarPrecioSugerido();
     }
 
     // Variable global para empleados seleccionados
@@ -310,36 +536,67 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Popup de selección de empleados
     document.getElementById('btn-seleccionar-empleados').addEventListener('click', async () => {
-        document.getElementById('empleados-popup').classList.remove('hidden');
-        const res = await fetch(`${API_ADMIN_BASE_URL}/empleados`, { headers: { "Authorization": `Bearer ${token}` } });
-        const empleados = await res.json();
+        try {
+            document.getElementById('empleados-popup').classList.remove('hidden');
+            const res = await fetch(`${API_ADMIN_BASE_URL}/empleados`, { headers: { "Authorization": `Bearer ${token}` } });
+            const empleados = await res.json();
 
-        // Si querés agrupar por puesto, podés hacerlo así:
-         const puestos = {};
-         empleados.forEach(e => {
-             if (!puestos[e.puesto]) puestos[e.puesto] = [];
-             puestos[e.puesto].push(e);
-        });
-
-        const contenedor = document.getElementById('empleados-lista');
-        contenedor.innerHTML = '';
-        empleados.forEach(e => {
-            const btn = document.createElement('button');
-            btn.type = 'button';
-            btn.textContent = `${e.nombre} ${e.apellido} (${e.puesto})`;
-            btn.className = 'servicio-btn' + (empleadosSeleccionados.includes(e.id_empleado) ? ' selected' : '');
-            btn.onclick = () => {
-                if (empleadosSeleccionados.includes(e.id_empleado)) {
-                    empleadosSeleccionados = empleadosSeleccionados.filter(id => id !== e.id_empleado);
-                    btn.classList.remove('selected');
-                } else {
-                    empleadosSeleccionados.push(e.id_empleado);
-                    btn.classList.add('selected');
-                }
-                renderEmpleadosSeleccionados();
-            };
-            contenedor.appendChild(btn);
-        });
+            const contenedor = document.getElementById('empleados-lista');
+            contenedor.innerHTML = '';
+            
+            empleados.forEach(empleado => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = `empleado-btn ${empleadosSeleccionados.includes(empleado.id_empleado) ? 'selected' : ''}`;
+                btn.dataset.empleadoId = empleado.id_empleado;
+                
+                // Obtener iniciales para el avatar
+                const iniciales = `${empleado.nombre.charAt(0)}${empleado.apellido ? empleado.apellido.charAt(0) : ''}`.toUpperCase();
+                
+                btn.innerHTML = `
+                    <div class="empleado-info">
+                        <div class="empleado-avatar">${iniciales}</div>
+                        <div class="empleado-detalles">
+                            <div class="empleado-nombre">${empleado.nombre} ${empleado.apellido || ''}</div>
+                            <div class="empleado-especialidad">${empleado.puesto || 'Empleado'}</div>
+                        </div>
+                        ${empleadosSeleccionados.includes(empleado.id_empleado) ? '<div class="seleccion-contador">?�</div>' : ''}
+                    </div>
+                `;
+                
+                btn.addEventListener('click', () => {
+                    const empleadoId = parseInt(btn.dataset.empleadoId);
+                    
+                    if (empleadosSeleccionados.includes(empleadoId)) {
+                        empleadosSeleccionados = empleadosSeleccionados.filter(id => id !== empleadoId);
+                        btn.classList.remove('selected');
+                    } else {
+                        empleadosSeleccionados.push(empleadoId);
+                        btn.classList.add('selected');
+                    }
+                    
+                    // Actualizar el ícono de selección
+                    const contador = btn.querySelector('.seleccion-contador');
+                    if (empleadosSeleccionados.includes(empleadoId)) {
+                        if (!contador) {
+                            btn.querySelector('.empleado-info').insertAdjacentHTML('beforeend', '<div class="seleccion-contador">?�</div>');
+                        }
+                    } else {
+                        if (contador) {
+                            contador.remove();
+                        }
+                    }
+                    
+                    renderEmpleadosSeleccionados();
+                });
+                
+                contenedor.appendChild(btn);
+            });
+            
+        } catch (error) {
+            showAlert('Error al cargar empleados: ' + error.message, true);
+            console.error(error);
+        }
     });
 
     document.getElementById('guardar-empleados-popup').onclick = () => {
@@ -368,11 +625,89 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     editTurnoBtn.addEventListener("click", async () => {
-        alert("Funcionalidad de edición de turno aún no implementada.");
+        const turnoId = prompt("Ingrese el ID del turno a modificar:");
+        if (!turnoId || isNaN(turnoId)) {
+            showAlert("ID de turno inválido", true);
+            return;
+        }
+
+        try {
+            // Buscar el turno en la base de datos para pre-cargar los datos
+            const response = await fetch(`${API_ADMIN_BASE_URL}/turnos/${turnoId}`, {
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+            
+            if (!response.ok) {
+                throw new Error("Turno no encontrado");
+            }
+            
+            const turno = await response.json();
+            
+            // Pre-cargar el formulario con los datos del turno
+            document.getElementById("turno-fecha").value = turno.fecha;
+            document.getElementById("turno-hora-inicio").value = turno.hora_inicio;
+            document.getElementById("turno-hora-fin").value = turno.hora_fin;
+            document.getElementById("turno-precio").value = turno.precio_total;
+            
+            // Cargar servicios y empleados seleccionados
+            if (turno.servicios && turno.servicios.length > 0) {
+                // Necesitamos obtener los objetos completos de servicios
+                try {
+                    const serviciosRes = await fetch(`${API_BASE_URL}/servicios`, { 
+                        headers: { "Authorization": `Bearer ${token}` } 
+                    });
+                    const todosLosServicios = await serviciosRes.json();
+                    serviciosSeleccionados = todosLosServicios.filter(s => turno.servicios.includes(s.id_servicio));
+                } catch (error) {
+                    console.error('Error cargando servicios:', error);
+                    serviciosSeleccionados = turno.servicios.map(id => ({ id_servicio: id, nombre: `Servicio ${id}` }));
+                }
+            } else {
+                serviciosSeleccionados = [];
+            }
+            
+            empleadosSeleccionados = turno.empleados || [];
+            
+            // Actualizar visualización
+            renderServiciosSeleccionados();
+            renderEmpleadosSeleccionados();
+            
+            // Configurar el formulario para edición
+            document.getElementById("turno-form-title").textContent = "Modificar Turno";
+            turnoForm.dataset.action = "edit";
+            turnoForm.dataset.turnoId = turnoId;
+            turnoFormContainer.classList.remove("hidden");
+            
+            showAlert(`Turno ${turnoId} cargado para edición`);
+            
+        } catch (error) {
+            showAlert("Error al cargar turno: " + error.message, true);
+            console.error(error);
+        }
     });
 
     deleteTurnoBtn.addEventListener("click", async () => {
-        alert("Funcionalidad de eliminación de turno aún no implementada.");
+        const turnoId = prompt("Ingrese el ID del turno a eliminar:");
+        if (!turnoId || isNaN(turnoId)) {
+            showAlert("ID de turno inválido", true);
+            return;
+        }
+
+        if (confirm(`¿Está seguro que desea eliminar el turno ID ${turnoId}? Esta acción no se puede deshacer.`)) {
+            try {
+                const response = await fetch(`${API_ADMIN_BASE_URL}/turnos/${turnoId}`, {
+                    method: "DELETE",
+                    headers: { "Authorization": `Bearer ${token}` }
+                });
+                
+                const result = await handleFetchError(response);
+                showAlert(result.message || "Turno eliminado exitosamente");
+                
+            } catch (error) {
+                showAlert("Error al eliminar turno: " + error.message, true);
+                console.error(error);
+            }
+        }
     });
 
     document.getElementById("cancel-turno").addEventListener("click", () => {
@@ -386,22 +721,39 @@ document.addEventListener("DOMContentLoaded", () => {
         submitButton.disabled = true;
 
         function calcularDuracion(horaInicio, horaFin) {
-            const [h1, m1] = horaInicio.split(':').map(Number);
-            const [h2, m2] = horaFin.split(':').map(Number);
-            return (h2 * 60 + m2) - (h1 * 60 + m1);
+            try {
+                if (!horaInicio || !horaFin) return 0;
+                const [h1, m1] = horaInicio.split(':').map(Number);
+                const [h2, m2] = horaFin.split(':').map(Number);
+                const duracion = (h2 * 60 + m2) - (h1 * 60 + m1);
+                console.log(`🕐 Calculando duración: ${horaInicio} a ${horaFin} = ${duracion} minutos`);
+                return duracion;
+            } catch (error) {
+                console.error('Error calculando duración:', error);
+                return 0;
+            }
         }
 
         try {
-            const servicios = serviciosSeleccionados;
+            const servicios = serviciosSeleccionados.map(s => s.id_servicio); // Convertir a array de IDs
             const empleados = empleadosSeleccionados;
             const fecha = document.getElementById('turno-fecha').value;
             const hora_inicio = document.getElementById('turno-hora-inicio').value;
             const hora_fin = document.getElementById('turno-hora-fin').value;
-            const precio = parseFloat(document.getElementById('turno-precio').value);
+            const precioInput = document.getElementById('turno-precio').value;
+            const precio_total = precioInput ? parseFloat(precioInput) : 0;
             const duracion_total = calcularDuracion(hora_inicio, hora_fin);
 
-            if (!servicios.length || !empleados.length || !fecha || !hora_inicio || !hora_fin || isNaN(precio)) {
+            console.log('🔍 Validando datos antes de enviar:');
+            console.log('   - precioInput:', precioInput, '(tipo:', typeof precioInput, ')');
+            console.log('   - precio_total calculado:', precio_total, '(tipo:', typeof precio_total, ', isNaN:', isNaN(precio_total), ')');
+
+            if (!servicios.length || !empleados.length || !fecha || !hora_inicio || !hora_fin) {
                 throw new Error("Completa todos los campos obligatorios");
+            }
+
+            if (isNaN(precio_total) || precio_total < 0) {
+                throw new Error("El precio debe ser un número válido mayor o igual a 0");
             }
 
             const turnoData = {
@@ -410,13 +762,23 @@ document.addEventListener("DOMContentLoaded", () => {
                 fecha,
                 hora_inicio,
                 hora_fin,
-                precio,
+                precio_total,
                 duracion_total
             };
 
-            const isEdit = turnoForm.dataset.id;
+            console.log('🚀 Enviando datos del turno:');
+            console.log('   - servicios:', servicios, '(length:', servicios?.length, ')');
+            console.log('   - empleados:', empleados, '(length:', empleados?.length, ')');
+            console.log('   - fecha:', fecha);
+            console.log('   - hora_inicio:', hora_inicio);
+            console.log('   - hora_fin:', hora_fin);
+            console.log('   - precio_total:', precio_total, '(tipo:', typeof precio_total, ')');
+            console.log('   - duracion_total:', duracion_total, '(tipo:', typeof duracion_total, ')');
+            console.log('📦 Datos completos:', JSON.stringify(turnoData, null, 2));
+
+            const isEdit = turnoForm.dataset.action === "edit";
             const endpoint = isEdit 
-                ? `${API_ADMIN_BASE_URL}/turnos/${turnoForm.dataset.id}`
+                ? `${API_ADMIN_BASE_URL}/turnos/${turnoForm.dataset.turnoId}`
                 : `${API_ADMIN_BASE_URL}/turnos`;
             const method = isEdit ? 'PUT' : 'POST';
 
@@ -439,8 +801,33 @@ document.addEventListener("DOMContentLoaded", () => {
             renderServiciosSeleccionados();
             renderEmpleadosSeleccionados();
         } catch (error) {
-            showAlert("Error: " + error.message, true);
-            console.error(error);
+            console.error('Error completo:', error);
+            
+            // Intentar parsear el error para conflictos
+            let errorData = null;
+            try {
+                errorData = JSON.parse(error.message);
+            } catch (e) {
+                // Si no es JSON, usar el mensaje tal como está
+            }
+
+            if (errorData && errorData.error === "Conflicto de horarios detectado") {
+                // Es un error de conflicto, mostrar notificación especial
+                const conflictDetails = {
+                    conflictos: errorData.conflictos || [],
+                    horaInicio: document.getElementById('turno-hora-inicio').value,
+                    horaFin: document.getElementById('turno-hora-fin').value
+                };
+                
+                showNotification(
+                    "No se puede crear el turno porque uno o más empleados ya tienen turnos asignados en este horario.",
+                    'conflict',
+                    conflictDetails
+                );
+            } else {
+                // Error genérico
+                showAlert(error.message || "Ha ocurrido un error inesperado", true);
+            }
         } finally {
             submitButton.disabled = false;
         }
@@ -449,7 +836,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // ==================== GESTIÓN DE ADMINISTRADORES ====================
     const adminFormContainer = document.getElementById("admin-form-container");
     const adminForm = document.getElementById("admin-form");
-    const adminsListContainer = document.getElementById("admins-list-container");
+    const adminsPopup = document.getElementById("admins-popup");
     const adminsTable = document.getElementById("admins-table").querySelector("tbody");
     const addAdminBtn = document.getElementById("add-admin");
     const viewAdminsBtn = document.getElementById("view-admins");
@@ -462,7 +849,7 @@ document.addEventListener("DOMContentLoaded", () => {
         } else {
             resetForm(adminForm);
             toggleVisibility(adminFormContainer, true);
-            toggleVisibility(adminsListContainer, false);
+            adminsPopup.classList.add("hidden");
         }
     });
 
@@ -495,9 +882,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Toggle para ver administradores
     viewAdminsBtn.addEventListener("click", async () => {
-        const isListVisible = !adminsListContainer.classList.contains("hidden");
+        const isListVisible = !adminsPopup.classList.contains("hidden");
         if (isListVisible) {
-            toggleVisibility(adminsListContainer, false);
+            adminsPopup.classList.add("hidden");
         } else {
             try {
                 const response = await fetch(`${API_ADMIN_BASE_URL}/administradores`, {
@@ -507,7 +894,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const admins = await handleFetchError(response);
                 renderAdminsTable(admins);
                 toggleVisibility(adminFormContainer, false);
-                toggleVisibility(adminsListContainer, true);
+                adminsPopup.classList.remove("hidden");
             } catch (error) {
                 showAlert("Error al obtener administradores: " + error.message, true);
                 console.error(error);
@@ -519,11 +906,12 @@ document.addEventListener("DOMContentLoaded", () => {
         toggleVisibility(adminFormContainer, false);
     });
 
-    document.getElementById("close-admins-list")?.addEventListener("click", () => {
-        toggleVisibility(adminsListContainer, false);
+    document.getElementById("cerrar-admins-popup")?.addEventListener("click", () => {
+        document.getElementById("admins-popup").classList.add("hidden");
     });
 
     function renderAdminsTable(admins) {
+        const adminsTable = document.getElementById("admins-table").querySelector("tbody");
         adminsTable.innerHTML = "";
         admins.forEach(admin => {
             const row = document.createElement("tr");
@@ -533,14 +921,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 <td>${admin.email}</td>
                 <td>${admin.telefono || 'N/A'}</td>
                 <td>
-                    <button class="btn-delete" data-id="${admin.id_admin}">Eliminar</button>
+                    <button class="action-btn delete-btn" data-id="${admin.id_admin}">Eliminar</button>
                 </td>
             `;
             adminsTable.appendChild(row);
         });
 
         // Manejar eliminación
-        document.querySelectorAll(".btn-delete").forEach(btn => {
+        document.querySelectorAll(".delete-btn").forEach(btn => {
             btn.addEventListener("click", async (e) => {
                 const id = e.target.dataset.id;
                 if (confirm(`¿Eliminar administrador con ID ${id}?`)) {
@@ -565,7 +953,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // ==================== GESTIÓN DE EMPLEADOS ====================
     const employeeFormContainer = document.getElementById("employee-form-container");
     const employeeForm = document.getElementById("employee-form");
-    const employeesListContainer = document.getElementById("employees-list-container");
+    const employeesPopup = document.getElementById("employees-popup");
     const employeesTable = document.getElementById("employees-table").querySelector("tbody");
     const addEmployeeBtn = document.getElementById("add-employee");
     const viewEmployeesBtn = document.getElementById("view-employees");
@@ -578,7 +966,7 @@ document.addEventListener("DOMContentLoaded", () => {
         } else {
             resetForm(employeeForm);
             toggleVisibility(employeeFormContainer, true);
-            toggleVisibility(employeesListContainer, false);
+            employeesPopup.classList.add("hidden");
         }
     });
 
@@ -611,9 +999,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Toggle para ver empleados
     viewEmployeesBtn.addEventListener("click", async () => {
-        const isListVisible = !employeesListContainer.classList.contains("hidden");
+        const isListVisible = !employeesPopup.classList.contains("hidden");
         if (isListVisible) {
-            toggleVisibility(employeesListContainer, false);
+            employeesPopup.classList.add("hidden");
         } else {
             try {
                 const response = await fetch(`${API_ADMIN_BASE_URL}/empleados`, {
@@ -623,7 +1011,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 const empleados = await handleFetchError(response);
                 renderEmployeesTable(empleados);
                 toggleVisibility(employeeFormContainer, false);
-                toggleVisibility(employeesListContainer, true);
+                employeesPopup.classList.remove("hidden");
+                employeesPopup.classList.add("show");
             } catch (error) {
                 showAlert("Error al obtener empleados: " + error.message, true);
                 console.error(error);
@@ -640,6 +1029,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     function renderEmployeesTable(empleados) {
+        const employeesTable = document.getElementById("employees-table").querySelector("tbody");
         employeesTable.innerHTML = "";
         empleados.forEach(empleado => {
             const row = document.createElement("tr");
@@ -649,15 +1039,15 @@ document.addEventListener("DOMContentLoaded", () => {
                 <td>${empleado.email}</td>
                 <td>${empleado.puesto}</td>
                 <td>
-                    <button class="btn-delete" data-id="${empleado.id_empleado}">Eliminar</button>
-                    <button class="btn-servicios" data-id="${empleado.id_empleado}" data-nombre="${empleado.nombre} ${empleado.apellido}">Servicios</button>
+                    <button class="action-btn delete-btn" data-id="${empleado.id_empleado}">Eliminar</button>
+                    <button class="action-btn edit-btn" data-id="${empleado.id_empleado}" data-nombre="${empleado.nombre} ${empleado.apellido}">Servicios</button>
                 </td>
             `;
             employeesTable.appendChild(row);
         });
 
         // Manejar eliminación
-        document.querySelectorAll(".btn-delete").forEach(btn => {
+        document.querySelectorAll(".delete-btn").forEach(btn => {
             btn.addEventListener("click", async (e) => {
                 const id = e.target.dataset.id;
                 if (confirm(`¿Eliminar empleado con ID ${id}?`)) {
@@ -678,7 +1068,7 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         });
 
-        document.querySelectorAll(".btn-servicios").forEach(btn => {
+        document.querySelectorAll(".edit-btn[data-nombre]").forEach(btn => {
             btn.addEventListener("click", (e) => {
                 const id = btn.dataset.id;
                 const nombre = btn.dataset.nombre;
@@ -732,257 +1122,153 @@ document.addEventListener("DOMContentLoaded", () => {
         asignarServiciosContainer.classList.add("hidden");
     });
 
-    // ==================== GESTIÓN DE TURNOS DISPONIBLES ====================
-    const availableTurnosContainer = document.getElementById("available-turnos-container");
-    const availableTurnosList = document.getElementById("available-turnos-list");
-    const viewAvailableTurnosBtn = document.getElementById("view-available-turnos");
-    const closeAvailableTurnosBtn = document.getElementById("close-available-turnos");
+    // ==================== DISPONIBILIDAD DE EMPLEADOS ==================== 
 
-    viewAvailableTurnosBtn.addEventListener("click", async () => {
-        const isVisible = !availableTurnosContainer.classList.contains("hidden");
-        if (isVisible) {
-            toggleVisibility(availableTurnosContainer, false);
-        } else {
-            await cargarTurnosDisponibles();
-            toggleVisibility(availableTurnosContainer, true);
+    // ==================== DISPONIBILIDAD DE EMPLEADOS ====================
+
+    
+    // Referencias a elementos DOM
+    const checkEmployeeScheduleBtn = document.getElementById('check-employee-schedule');
+    const validateAssignmentBtn = document.getElementById('validate-assignment');
+    const scheduleFormContainer = document.getElementById('schedule-form-container');
+    const validationFormContainer = document.getElementById('validation-form-container');
+    const loadScheduleBtn = document.getElementById('load-schedule');
+    const cancelScheduleBtn = document.getElementById('cancel-schedule');
+    const validateEmployeesBtn = document.getElementById('validate-employees');
+    const cancelValidationBtn = document.getElementById('cancel-validation');
+
+    // Event listeners para botones principales
+    checkEmployeeScheduleBtn?.addEventListener('click', () => {
+        toggleVisibility(scheduleFormContainer, true);
+        toggleVisibility(validationFormContainer, false);
+        cargarEmpleadosSelect();
+    });
+
+    validateAssignmentBtn?.addEventListener('click', () => {
+        toggleVisibility(validationFormContainer, true);
+        toggleVisibility(scheduleFormContainer, false);
+        cargarEmpleadosValidacion();
+    });
+
+    // Event listeners para botones de cancelar
+    cancelScheduleBtn?.addEventListener('click', () => {
+        toggleVisibility(scheduleFormContainer, false);
+        const scheduleDisplay = document.getElementById('schedule-display');
+        if (scheduleDisplay) {
+            scheduleDisplay.classList.add('hidden');
         }
     });
 
-    closeAvailableTurnosBtn.addEventListener("click", () => {
-        toggleVisibility(availableTurnosContainer, false);
+    cancelValidationBtn?.addEventListener('click', () => {
+        toggleVisibility(validationFormContainer, false);
+        const validationResults = document.getElementById('validation-results');
+        if (validationResults) {
+            validationResults.classList.add('hidden');
+        }
     });
 
-    async function cargarTurnosDisponibles() {
+    // Event listeners para cargar cronograma
+    loadScheduleBtn?.addEventListener('click', cargarCronograma);
+
+    // Cargar empleados en el select del cronograma
+    async function cargarEmpleadosSelect() {
         try {
-            availableTurnosList.innerHTML = "<p>Cargando turnos disponibles...</p>";
-            const response = await fetch(`${API_BASE_URL}/turnos/disponibles-admin`, {
+            const response = await fetch(`${API_BASE_URL}/empleados`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            const turnos = await handleFetchError(response);
-            renderTurnosDisponibles(turnos);
-        } catch (error) {
-            availableTurnosList.innerHTML = `<p style="color:red">Error al cargar turnos: ${error.message}</p>`;
-            console.error(error);
-        }
-    }
-
-    function renderTurnosDisponibles(turnos) {
-        if (!turnos || turnos.length === 0) {
-            availableTurnosList.innerHTML = "<p>No hay turnos disponibles.</p>";
-            return;
-        }
-
-        const estadoTexto = {
-            'disponible': 'Disponible',
-            'reservado': 'Reservado',
-            'atendido': 'Atendido',
-            'cancelado': 'Cancelado',
-            'expirado': 'Expirado',
-            'no_realizado': 'No Realizado'
-        };
-
-        const tabla = `
-            <table class="admin-table">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Fecha</th>
-                        <th>Hora Inicio</th>
-                        <th>Hora Fin</th>
-                        <th>Servicios</th>
-                        <th>Empleados</th>
-                        <th>Precio</th>
-                        <th>Estado</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${turnos.map(turno => `
-                        <tr>
-                            <td>${turno.id_turno}</td>
-                            <td>${new Date(turno.fecha).toLocaleDateString('es-ES')}</td>
-                            <td>${turno.hora}</td>
-                            <td>${turno.hora_fin || 'N/A'}</td>
-                            <td>${turno.servicios || 'N/A'}</td>
-                            <td>${turno.empleados || 'N/A'}</td>
-                            <td>$${Number(turno.precio_total || 0).toFixed(2)}</td>
-                            <td><span class="estado-badge estado-${turno.estado}">${estadoTexto[turno.estado] || turno.estado}</span></td>
-                        </tr>
-                    `).join("")}
-                </tbody>
-            </table>
-        `;
-        availableTurnosList.innerHTML = tabla;
-    }
-
-    // ==================== HISTORIAL DE TURNOS ====================
-    const historialTurnosContainer = document.getElementById("historial-turnos-container");
-    const historialTurnosList = document.getElementById("historial-turnos-list");
-    const viewHistorialTurnosBtn = document.getElementById("view-historial-turnos");
-    const closeHistorialTurnosBtn = document.getElementById("close-historial-turnos");
-
-    let currentFilter = 'confirmado';
-    let historialData = [];
-
-    viewHistorialTurnosBtn.addEventListener("click", async () => {
-        const isVisible = !historialTurnosContainer.classList.contains("hidden");
-        if (isVisible) {
-            toggleVisibility(historialTurnosContainer, false);
-        } else {
-            await cargarHistorialTurnos();
-            toggleVisibility(historialTurnosContainer, true);
-        }
-    });
-
-    closeHistorialTurnosBtn.addEventListener("click", () => {
-        toggleVisibility(historialTurnosContainer, false);
-    });
-
-    // Event listeners para los filtros
-    document.querySelectorAll('.filter-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            // Remover clase active de todos los botones
-            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-            // Agregar clase active al botón clickeado
-            e.target.classList.add('active');
+            const empleados = await handleFetchError(response);
             
-            // Actualizar filtro y renderizar
-            const filterId = e.target.id.replace('filter-', '');
-            if (filterId === 'todos') {
-                currentFilter = null;
-            } else if (filterId === 'no-realizado') {
-                currentFilter = 'no_realizado';
-            } else if (filterId === 'expirado') {
-                currentFilter = 'expirado';
-            } else if (filterId === 'confirmado') {
-                currentFilter = 'confirmado';
-            } else if (filterId === 'completado') {
-                currentFilter = 'completado';
-            } else if (filterId === 'cancelado') {
-                currentFilter = 'cancelado';
-            } else {
-                currentFilter = filterId;
-            }
-            renderHistorialTurnos();
-        });
-    });
-
-    async function cargarHistorialTurnos() {
-        try {
-            historialTurnosList.innerHTML = "<p>Cargando historial...</p>";
-            const response = await fetch(`${API_BASE_URL}/turnos/historial-completo`, {
-                headers: { 'Authorization': `Bearer ${token}` }
+            const select = document.getElementById('schedule-empleado');
+            select.innerHTML = '<option value="">Seleccionar empleado...</option>';
+            
+            empleados.forEach(empleado => {
+                const option = document.createElement('option');
+                option.value = empleado.id_empleado;
+                option.textContent = `${empleado.nombre} ${empleado.apellido}`;
+                select.appendChild(option);
             });
-            historialData = await handleFetchError(response);
-            renderHistorialTurnos();
         } catch (error) {
-            historialTurnosList.innerHTML = `<p style="color:red">Error al cargar historial: ${error.message}</p>`;
-            console.error(error);
+            console.error('Error cargando empleados:', error);
+            showAlert('Error al cargar empleados: ' + error.message, true);
         }
     }
 
-    function renderHistorialTurnos() {
-        let turnosFiltrados = historialData;
-        
-        if (currentFilter) {
-            turnosFiltrados = historialData.filter(turno => turno.estado === currentFilter);
+    // Cargar empleados para validación (checkboxes)
+    async function cargarEmpleadosValidacion() {
+        try {
+            const response = await fetch(`${API_ADMIN_BASE_URL}/empleados`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const empleados = await handleFetchError(response);
+            
+            const container = document.getElementById('validation-empleados-list');
+            container.innerHTML = '';
+            
+            empleados.forEach(empleado => {
+                const div = document.createElement('div');
+                div.className = 'empleado-checkbox';
+                div.innerHTML = `
+                    <input type="checkbox" id="emp-${empleado.id_empleado}" value="${empleado.id_empleado}">
+                    <label for="emp-${empleado.id_empleado}">${empleado.nombre} ${empleado.apellido}</label>
+                `;
+                container.appendChild(div);
+            });
+        } catch (error) {
+            console.error('Error cargando empleados:', error);
+            showAlert('Error al cargar empleados: ' + error.message, true);
         }
+    }
 
-        if (!turnosFiltrados || turnosFiltrados.length === 0) {
-            historialTurnosList.innerHTML = `<p>No hay turnos ${currentFilter ? 'en estado ' + currentFilter : 'en el historial'}.</p>`;
+    // Cargar cronograma de un empleado
+    async function cargarCronograma() {
+        const empleadoId = document.getElementById('schedule-empleado').value;
+        const fecha = document.getElementById('schedule-fecha').value;
+
+        console.log('=== CRONOGRAMA DEBUG v2.0 ===');
+        console.log('Elemento empleado:', document.getElementById('schedule-empleado'));
+        console.log('Elemento fecha:', document.getElementById('schedule-fecha'));
+        console.log('EmpleadoId obtenido:', empleadoId);
+        console.log('Fecha obtenida:', fecha);
+        console.log('===========================');
+
+        if (!empleadoId || !fecha) {
+            showAlert('Por favor selecciona empleado y fecha', true);
             return;
         }
 
-        // Traducir estados al español
-        const estadoTexto = {
-            'disponible': 'Disponible',
-            'pendiente': 'Pendiente',
-            'confirmado': 'Confirmado',
-            'completado': 'Completado',
-            'cancelado': 'Cancelado',
-            'expirado': 'Expirado',
-            'no_realizado': 'No Realizado'
-        };
+        console.log('Cargando cronograma para empleado:', empleadoId, 'fecha:', fecha);
+        console.log('URL completa:', `${API_BASE_URL}/turnos/cronograma/${empleadoId}/${fecha}`);
+        console.log('Token disponible:', !!token);
+        console.log('Token completo:', token ? token.substring(0, 20) + '...' : 'NO TOKEN');
 
-        const tabla = `
-            <table class="admin-table">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Cliente</th>
-                        <th>Fecha</th>
-                        <th>Hora</th>
-                        <th>Servicios</th>
-                        <th>Precio</th>
-                        <th>Estado</th>
-                        <th>Fecha Reserva</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${turnosFiltrados.map(turno => `
-                        <tr>
-                            <td>${turno.id_turno}</td>
-                            <td>${turno.cliente_nombre ? `${turno.cliente_nombre} ${turno.cliente_apellido || ''}` : 'N/A'}</td>
-                            <td>${new Date(turno.fecha).toLocaleDateString('es-ES')}</td>
-                            <td>${turno.hora_inicio} - ${turno.hora_fin}</td>
-                            <td>${turno.servicios || 'N/A'}</td>
-                            <td>$${Number(turno.precio_total || 0).toFixed(2)}</td>
-                            <td><span class="estado-badge estado-${turno.estado}">${estadoTexto[turno.estado] || turno.estado}</span></td>
-                            <td>${turno.fecha_reserva ? new Date(turno.fecha_reserva).toLocaleDateString('es-ES') : 'N/A'}</td>
-                            <td>
-                                ${turno.estado === 'reservado' ? `
-                                    <button class="btn-confirmar" data-id="${turno.id_turno}">Confirmar</button>
-                                    <button class="btn-cancelar" data-id="${turno.id_turno}">Cancelar</button>
-                                ` : ''}
-                            </td>
-                        </tr>
-                    `).join("")}
-                </tbody>
-            </table>
-        `;
-        historialTurnosList.innerHTML = tabla;
-
-        // Agregar event listeners para los botones de acción
-        document.querySelectorAll('.btn-confirmar').forEach(btn => {
-            btn.addEventListener('click', (e) => confirmarTurno(e.target.dataset.id));
-        });
-
-        document.querySelectorAll('.btn-cancelar').forEach(btn => {
-            btn.addEventListener('click', (e) => cancelarTurno(e.target.dataset.id));
-        });
-    }
-
-    async function confirmarTurno(idTurno) {
-        if (!confirm('¿Confirmar que el cliente asistió al turno?')) return;
-
-        try {
-            const response = await fetch(`${API_BASE_URL}/turnos/confirmar/${idTurno}`, {
-                method: 'PATCH',
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const result = await handleFetchError(response);
-            showAlert(result.message || 'Turno confirmado exitosamente');
-            await cargarHistorialTurnos(); // Recargar historial
-        } catch (error) {
-            showAlert('Error al confirmar turno: ' + error.message, true);
-            console.error(error);
+        if (!token) {
+            showAlert('Error: No hay token de autenticación. Por favor, vuelve a iniciar sesión.', true);
+            return;
         }
-    }
-
-    async function cancelarTurno(idTurno) {
-        if (!confirm('¿Cancelar este turno?')) return;
 
         try {
-            const response = await fetch(`${API_BASE_URL}/turnos/admin/cancelar/${idTurno}`, {
-                method: 'PATCH',
-                headers: { 'Authorization': `Bearer ${token}` }
+            const response = await fetch(`${API_BASE_URL}/turnos/cronograma/${empleadoId}/${fecha}`, {
+                headers: { 
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
             });
-            const result = await handleFetchError(response);
-            showAlert(result.message || 'Turno cancelado exitosamente');
-            await cargarHistorialTurnos(); // Recargar historial
+            
+            console.log('Response status:', response.status);
+            console.log('Response ok:', response.ok);
+            
+            const data = await handleFetchError(response);
+            
+            console.log('Cronograma recibido:', data);
+            
+            // Mostrar en pop-up SIN ocultar el formulario
+            mostrarCronogramaEnPopup(data.turnos, fecha);
+            
+            // NO ocultar el formulario para evitar interferencia con el pop-up
+            
         } catch (error) {
-            showAlert('Error al cancelar turno: ' + error.message, true);
-            console.error(error);
+            console.error('Error cargando cronograma:', error);
+            showAlert('Error al cargar cronograma: ' + error.message, true);
         }
     }
 
@@ -993,4 +1279,587 @@ document.addEventListener("DOMContentLoaded", () => {
             window.location.href = "index.html";
         }
     });
+
+    // ==================== GESTIÓN DE POP-UPS ADICIONALES ====================
+    
+    // Event listeners para cerrar todos los pop-ups
+    // Event listener mejorado para el botón cerrar del cronograma
+    document.getElementById("cerrar-schedule-popup")?.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const popup = document.getElementById("schedule-popup");
+        if (popup) {
+            popup.classList.add("hidden");
+            popup.classList.remove("show");
+            // Limpiar estilos inline forzados
+            popup.style.cssText = '';
+            console.log("Pop-up de cronograma cerrado por botón principal - estilos limpiados");
+        }
+    });
+
+    document.getElementById("cerrar-validation-popup")?.addEventListener("click", () => {
+        document.getElementById("validation-popup").classList.add("hidden");
+    });
+
+    document.getElementById("cerrar-employees-popup")?.addEventListener("click", () => {
+        document.getElementById("employees-popup").classList.add("hidden");
+    });
+
+    document.getElementById("cerrar-available-turnos-popup")?.addEventListener("click", () => {
+        document.getElementById("available-turnos-popup").classList.add("hidden");
+    });
+
+    document.getElementById("cerrar-historial-turnos-popup")?.addEventListener("click", () => {
+        document.getElementById("historial-turnos-popup").classList.add("hidden");
+    });
+
+    // Cerrar pop-ups al hacer clic fuera - extender función existente con limpieza de estilos
+    document.addEventListener('click', (e) => {
+        const popups = [
+            'servicios-popup', 'empleados-popup', 'schedule-popup', 
+            'validation-popup', 'admins-popup', 'employees-popup',
+            'available-turnos-popup', 'historial-turnos-popup'
+        ];
+        
+        popups.forEach(popupId => {
+            const popup = document.getElementById(popupId);
+            if (popup && e.target === popup) {
+                popup.classList.add('hidden');
+                popup.classList.remove('show');
+                // Limpiar estilos inline especialmente para schedule-popup
+                if (popupId === 'schedule-popup') {
+                    popup.style.cssText = '';
+                    console.log('Pop-up de cronograma cerrado por clic fuera - estilos limpiados');
+                }
+            }
+        });
+    });
+
+    // ==================== FUNCIONES MEJORADAS PARA CRONOGRAMA ====================
+
+    function mostrarCronogramaEnPopup(cronograma, fecha) {
+        const content = document.getElementById("schedule-content");
+        const popup = document.getElementById("schedule-popup");
+        
+        // Asegurar que el popup existe
+        if (!popup || !content) {
+            showAlert("Error: No se encontró el pop-up de cronograma", true);
+            console.error("Elementos no encontrados - popup:", popup, "content:", content);
+            return;
+        }
+        
+        console.log('Mostrando cronograma en popup para fecha:', fecha, 'turnos:', cronograma);
+        
+        // Debug: mostrar la estructura de un turno para verificar propiedades
+        if (cronograma && cronograma.length > 0) {
+            console.log('Estructura del primer turno:', cronograma[0]);
+            console.log('Propiedades disponibles:', Object.keys(cronograma[0]));
+        }
+        
+        if (!cronograma || cronograma.length === 0) {
+            content.innerHTML = `
+                <div class="list-item">
+                    <div class="list-item-content">
+                        <div class="list-item-title">Sin turnos programados</div>
+                        <div class="list-item-subtitle">No hay actividades para ${fecha}</div>
+                    </div>
+                </div>
+            `;
+        } else {
+            // Aplicar estilos uniformes a todos los elementos del cronograma
+            const estilosElemento = `
+                margin-bottom: 15px; 
+                padding: 15px; 
+                border: 1px solid #e5e7eb; 
+                border-radius: 8px; 
+                background-color: #f9fafb;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            `;
+            
+            content.innerHTML = `
+                <div class="scrollable-list">
+                    ${cronograma.map((turno, index) => `
+                        <div class="schedule-item" style="${estilosElemento}">
+                            <div class="schedule-time" style="font-weight: bold; color: #2d6a4f; margin-bottom: 8px; font-size: 16px;">
+                                ${turno.hora_inicio || 'Hora no especificada'} - ${turno.hora_fin || 'Fin no especificado'}
+                            </div>
+                            <div class="schedule-service" style="color: #374151; margin-bottom: 6px; font-size: 14px;">
+                                <strong>Servicio:</strong> ${turno.servicios || 'Servicio no especificado'}
+                            </div>
+                            <div class="schedule-client" style="color: #6b7280; margin-bottom: 6px; font-size: 14px;">
+                                <strong>Cliente:</strong> ${turno.cliente_nombre && turno.cliente_apellido ? `${turno.cliente_nombre} ${turno.cliente_apellido}` : 'Sin cliente asignado'}
+                            </div>
+                            <div class="validation-status ${turno.estado}" style="padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; display: inline-block; margin-top: 5px; ${
+                                turno.estado === 'disponible' ? 'background-color: #d1fae5; color: #065f46;' :
+                                turno.estado === 'reservado' ? 'background-color: #fef3c7; color: #92400e;' :
+                                turno.estado === 'confirmado' ? 'background-color: #dbeafe; color: #1e40af;' :
+                                'background-color: #f3f4f6; color: #374151;'
+                            }">
+                                ${turno.estado || 'disponible'}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+        
+        // Aplicar estilos directamente sin animaciones para evitar conflictos
+        popup.style.cssText = `
+            position: fixed !important;
+            top: 50% !important;
+            left: 50% !important;
+            transform: translate(-50%, -50%) !important;
+            z-index: 9999 !important;
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            background: white !important;
+            border-radius: 12px !important;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3) !important;
+            max-width: 600px !important;
+            width: 90% !important;
+            max-height: 80vh !important;
+            transition: none !important;
+        `;
+        
+        // Limpiar clases y agregar las necesarias
+        popup.classList.remove("hidden");
+        popup.classList.add("show");
+        
+        console.log('Pop-up configurado con estilos inline forzados y espaciado uniforme');
+        
+        // Reforzar el event listener del botón cerrar después de mostrar el popup
+        setTimeout(() => {
+            const closeBtn = document.getElementById("cerrar-schedule-popup");
+            if (closeBtn) {
+                // Remover listeners anteriores para evitar duplicados
+                closeBtn.replaceWith(closeBtn.cloneNode(true));
+                
+                // Agregar el listener mejorado
+                document.getElementById("cerrar-schedule-popup").addEventListener("click", (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    const popup = document.getElementById("schedule-popup");
+                    if (popup) {
+                        popup.classList.add("hidden");
+                        popup.classList.remove("show");
+                        popup.style.cssText = '';
+                        console.log("Pop-up de cronograma cerrado por botón - estilos limpiados");
+                    }
+                });
+                console.log('Event listener del botón cerrar reforzado');
+            }
+        }, 100);
+        
+        // Hacer scroll para asegurar que el popup sea visible
+        setTimeout(() => {
+            popup.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 150);
+    }
+
+    // ==================== FUNCIONES MEJORADAS PARA VALIDACIÓN ====================
+    
+    // Mejorar la validación de empleados
+    document.getElementById("validate-employees")?.addEventListener("click", async () => {
+        const fecha = document.getElementById("validation-fecha").value;
+        const horaInicio = document.getElementById("validation-hora-inicio").value;
+        const horaFin = document.getElementById("validation-hora-fin").value;
+        
+        if (!fecha || !horaInicio || !horaFin) {
+            showAlert("Por favor completa todos los campos", true);
+            return;
+        }
+
+        // Obtener empleados seleccionados
+        const empleadosSeleccionados = Array.from(
+            document.querySelectorAll('#validation-empleados-list input[type="checkbox"]:checked')
+        ).map(cb => parseInt(cb.value));
+
+        if (empleadosSeleccionados.length === 0) {
+            showAlert("Selecciona al menos un empleado para validar", true);
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/turnos/verificar-empleados`, {
+                method: 'POST',
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    empleadosIds: empleadosSeleccionados,
+                    fecha,
+                    horaInicio,
+                    horaFin
+                })
+            });
+            
+            const resultados = await handleFetchError(response);
+            mostrarValidacionEnPopup(resultados);
+            
+        } catch (error) {
+            showAlert("Error al validar disponibilidad: " + error.message, true);
+            console.error(error);
+        }
+    });
+
+    function mostrarValidacionEnPopup(resultados) {
+        const content = document.getElementById("validation-content");
+        const popup = document.getElementById("validation-popup");
+        
+        let html = `
+            <div class="validation-summary">
+                <h4>${resultados.mensaje}</h4>
+            </div>
+            <div class="scrollable-list">
+        `;
+
+        // Empleados disponibles
+        if (resultados.disponibles && resultados.disponibles.length > 0) {
+            html += '<h5>✅ Empleados Disponibles:</h5>';
+            resultados.disponibles.forEach(empleado => {
+                html += `
+                    <div class="validation-item">
+                        <div class="empleado-info">
+                            <div class="empleado-name">${empleado.nombre}</div>
+                            <div class="empleado-role">Empleado</div>
+                        </div>
+                        <div class="validation-status available">
+                            ✅ DISPONIBLE
+                        </div>
+                    </div>
+                `;
+            });
+        } else {
+            html += '<h5>✅ Empleados Disponibles:</h5>';
+            html += '<div class="validation-item"><div class="empleado-info"><div class="empleado-name" style="color:#888">Ningún empleado disponible para este horario</div></div></div>';
+        }
+
+        // Empleados NO disponibles
+        if (resultados.noDisponibles && resultados.noDisponibles.length > 0) {
+            html += '<h5>❌ Empleados No Disponibles:</h5>';
+            resultados.noDisponibles.forEach(empleado => {
+                html += `
+                    <div class="validation-item">
+                        <div class="empleado-info">
+                            <div class="empleado-name">${empleado.nombre}</div>
+                            <div class="empleado-role">Empleado</div>
+                        </div>
+                        <div class="validation-status busy">
+                            ❌ NO DISPONIBLE
+                        </div>
+                        <div class="conflict-details">
+                            <small>${empleado.razon}</small>
+                            ${empleado.conflictos && empleado.conflictos.length > 0 ?
+                                `<div class="conflict-turnos">
+                                    Conflictos: ${empleado.conflictos.map(t => t.horario || 'N/A').join(', ')}
+                                </div>` : ''
+                            }
+                        </div>
+                    </div>
+                `;
+            });
+        } else {
+            html += '<h5>❌ Empleados No Disponibles:</h5>';
+            html += '<div class="validation-item"><div class="empleado-info"><div class="empleado-name" style="color:#888">Todos los empleados están disponibles para este horario</div></div></div>';
+        }
+
+        html += '</div>';
+        
+        content.innerHTML = html;
+        popup.classList.remove("hidden");
+        popup.classList.add("show");
+    }
+
+    // ==================== MEJORAR TURNOS DISPONIBLES ====================
+    
+    document.getElementById("view-available-turnos")?.addEventListener("click", async () => {
+        try {
+            const response = await fetch(`${API_ADMIN_BASE_URL}/turnos/disponibles-admin`, {
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+            
+            const turnos = await handleFetchError(response);
+            mostrarTurnosDisponiblesEnPopup(turnos);
+            
+        } catch (error) {
+            showAlert("Error al cargar turnos disponibles: " + error.message, true);
+            console.error(error);
+        }
+    });
+
+    function mostrarTurnosDisponiblesEnPopup(turnos) {
+        const content = document.getElementById("available-turnos-list");
+        const popup = document.getElementById("available-turnos-popup");
+        
+        if (!turnos || turnos.length === 0) {
+            content.innerHTML = `
+                <div class="list-item">
+                    <div class="list-item-content">
+                        <div class="list-item-title">No hay turnos disponibles</div>
+                        <div class="list-item-subtitle">Todos los horarios están ocupados</div>
+                    </div>
+                </div>
+            `;
+        } else {
+            content.innerHTML = `
+                <div class="scrollable-list">
+                    ${turnos.map(turno => {
+                        // Usar los nombres correctos de las propiedades del backend
+                        const fecha = turno.fecha || 'Fecha no especificada';
+                        const horaInicio = turno.hora_inicio || 'Hora no especificada';
+                        const horaFin = turno.hora_fin || '';
+                        const servicios = turno.servicios || 'Servicio no especificado';
+                        const empleados = turno.empleados || 'Empleado no asignado';
+                        const precio = turno.precio_total || '0';
+                        const idTurno = turno.id_turno || 'N/A';
+                        const estado = turno.estado || 'disponible';
+                        const duracion = turno.duracion_total || '';
+                        
+                        // Formatear fecha
+                        let fechaFormateada = fecha;
+                        if (fecha !== 'Fecha no especificada') {
+                            try {
+                                fechaFormateada = new Date(fecha).toLocaleDateString('es-ES');
+                            } catch (e) {
+                                fechaFormateada = fecha;
+                            }
+                        }
+                        
+                        return `
+                            <div class="list-item">
+                                <div class="list-item-content">
+                                    <div class="list-item-title">
+                                        ${fechaFormateada} - ${horaInicio}${horaFin ? ` a ${horaFin}` : ''}
+                                        <span class="validation-status ${estado}">${estado}</span>
+                                    </div>
+                                    <div class="list-item-subtitle">
+                                        Servicios: ${servicios} | Empleados: ${empleados}
+                                    </div>
+                                    <div class="list-item-subtitle">
+                                        Precio: $${parseFloat(precio || 0).toFixed(2)}${duracion ? ` | Duración: ${duracion} min` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        }
+        
+        popup.classList.remove("hidden");
+        popup.classList.add("show");
+    }
+
+    // ==================== MEJORAR HISTORIAL DE TURNOS ====================
+    
+    document.getElementById("view-historial-turnos")?.addEventListener("click", async () => {
+        await cargarHistorialTurnos('confirmado'); // Estado por defecto
+        document.getElementById("historial-turnos-popup").classList.remove("hidden");
+        document.getElementById("historial-turnos-popup").classList.add("show");
+    });
+
+    // Event listeners para filtros de historial
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            // Remover clase active de todos los botones
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            // Agregar clase active al botón clickeado
+            e.target.classList.add('active');
+            
+            const estado = e.target.id.replace('filter-', '');
+            await cargarHistorialTurnos(estado);
+        });
+    });
+
+    async function cargarHistorialTurnos(estado) {
+        try {
+            const url = estado === 'todos' 
+                ? `${API_BASE_URL}/turnos/historial-completo`
+                : `${API_BASE_URL}/turnos/historial-completo?estado=${estado}`;
+                
+            const response = await fetch(url, {
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+            
+            const turnos = await handleFetchError(response);
+            mostrarHistorialEnPopup(turnos, estado);
+            
+        } catch (error) {
+            showAlert("Error al cargar historial: " + error.message, true);
+            console.error(error);
+        }
+    }
+
+    function mostrarHistorialEnPopup(turnos, estado) {
+        const content = document.getElementById("historial-turnos-list");
+        
+        if (!turnos || turnos.length === 0) {
+            content.innerHTML = `
+                <div class="list-item">
+                    <div class="list-item-content">
+                        <div class="list-item-title">No hay turnos ${estado}</div>
+                        <div class="list-item-subtitle">No se encontraron registros para este filtro</div>
+                    </div>
+                </div>
+            `;
+        } else {
+            content.innerHTML = `
+                <div class="scrollable-list">
+                    ${turnos.map(turno => `
+                        <div class="list-item">
+                            <div class="list-item-content">
+                                <div class="list-item-title">
+                                    ${turno.fecha} - ${turno.hora_inicio}
+                                    <span class="validation-status ${turno.estado}">${turno.estado}</span>
+                                </div>
+                                <div class="list-item-subtitle">
+                                    Cliente: ${turno.cliente || 'No asignado'} | 
+                                    Servicio: ${turno.servicio} | 
+                                    Empleado: ${turno.empleado} | 
+                                    $${turno.precio_total}
+                                </div>
+                            </div>
+                            <div class="list-item-actions">
+                                <button class="action-btn edit-btn" onclick="verDetallesTurno(${turno.id_turno})">
+                                    Detalles
+                                </button>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+    }
+
+    // ==================== CARGAR EMPLEADOS EN VALIDACIÓN ====================
+    
+    // Cargar lista de empleados para validación
+    document.getElementById("validate-assignment")?.addEventListener("click", async () => {
+        try {
+            const response = await fetch(`${API_ADMIN_BASE_URL}/empleados`, {
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+            
+            const empleados = await handleFetchError(response);
+            cargarEmpleadosParaValidacion(empleados);
+            toggleVisibility(document.getElementById("validation-form-container"), true);
+            
+        } catch (error) {
+            showAlert("Error al cargar empleados: " + error.message, true);
+            console.error(error);
+        }
+    });
+
+    function cargarEmpleadosParaValidacion(empleados) {
+        const container = document.getElementById("validation-empleados-list");
+        container.innerHTML = `
+            <div class="validation-empleados-list">
+                ${empleados.map(empleado => `
+                    <div class="validation-empleado-item">
+                        <input type="checkbox" value="${empleado.id_empleado}" id="emp-${empleado.id_empleado}">
+                        <label for="emp-${empleado.id_empleado}" class="validation-empleado-info">
+                            <div class="validation-empleado-name">${empleado.nombre} ${empleado.apellido || ''}</div>
+                            <div class="validation-empleado-role">${empleado.puesto || 'Empleado'}</div>
+                        </label>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+
+    // ==================== GESTIÓN DE SERVICIOS PARA COMBOS ====================
+    let serviciosComboSeleccionados = [];
+
+    // Cargar servicios en el pop-up de combos
+    async function cargarServiciosCombo() {
+        try {
+            const response = await fetch(`${API_BASE_URL}/servicios`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const servicios = await handleFetchError(response);
+            
+            const container = document.getElementById('servicios-combo-lista');
+            container.innerHTML = '';
+            
+            // Agrupar servicios por categoría
+            const serviciosPorCategoria = servicios.reduce((acc, servicio) => {
+                if (!acc[servicio.categoria]) {
+                    acc[servicio.categoria] = [];
+                }
+
+                acc[servicio.categoria].push(servicio);
+                return acc;
+            }, {});
+            
+            // Crear checkboxes por categoría
+            Object.keys(serviciosPorCategoria).forEach(categoria => {
+                const categoriaDiv = document.createElement('div');
+                categoriaDiv.className = 'categoria-servicios';
+                categoriaDiv.innerHTML = `<h4>${categoria}</h4>`;
+                
+                serviciosPorCategoria[categoria].forEach(servicio => {
+                    const servicioDiv = document.createElement('div');
+                    servicioDiv.className = 'servicio-checkbox';
+                    servicioDiv.innerHTML = `
+                        <label>
+                            <input type="checkbox" value="${servicio.id_servicio}" id="combo-serv-${servicio.id_servicio}">
+                            ${servicio.nombre} (${servicio.duracion} min)
+                        </label>
+                    `;
+                    categoriaDiv.appendChild(servicioDiv);
+                });
+                
+                container.appendChild(categoriaDiv);
+            });
+        } catch (error) {
+            showAlert('Error al cargar servicios: ' + error.message, true);
+        }
+    }
+
+    // Abrir pop-up de selección de servicios para combo
+    document.getElementById('btn-seleccionar-servicios-combo')?.addEventListener('click', async () => {
+        await cargarServiciosCombo();
+        
+        // Marcar servicios previamente seleccionados
+        serviciosComboSeleccionados.forEach(id => {
+            const checkbox = document.getElementById(`combo-serv-${id}`);
+            if (checkbox) checkbox.checked = true;
+        });
+        
+        document.getElementById('servicios-combo-popup').classList.remove('hidden');
+    });
+
+    // Cerrar pop-up de servicios combo
+    document.getElementById('cerrar-servicios-combo-popup')?.addEventListener('click', () => {
+        document.getElementById('servicios-combo-popup').classList.add('hidden');
+    });
+
+    // Guardar selección de servicios combo
+    document.getElementById('guardar-servicios-combo-popup')?.addEventListener('click', () => {
+        const checkboxes = document.querySelectorAll('#servicios-combo-lista input[type="checkbox"]:checked');
+        serviciosComboSeleccionados = Array.from(checkboxes).map(cb => parseInt(cb.value));
+        
+        // Actualizar visualización
+        const container = document.getElementById('servicios-combo-seleccionados');
+        if (serviciosComboSeleccionados.length > 0) {
+            container.innerHTML = `
+                <div class="servicios-seleccionados">
+                    <h5>Servicios seleccionados:</h5>
+                    ${Array.from(checkboxes).map(cb => `
+                        <span class="servicio-tag">${cb.parentElement.textContent.trim()}</span>
+                    `).join('')}
+                </div>
+            `;
+        } else {
+            container.innerHTML = '<p class="no-selection">No hay servicios seleccionados</p>';
+        }
+        
+        document.getElementById('servicios-combo-popup').classList.add('hidden');
+    });
+
+    // ==================== FIN DEL DOCUMENTO ====================
 });

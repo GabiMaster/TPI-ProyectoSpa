@@ -12,11 +12,22 @@ const clientRoutes = require('./routes/clientRoutes');
 const turnoRoutes = require('./routes/turnoRoutes');
 const servicioRoutes = require('./routes/servicioRoutes');
 const comboRoutes = require('./routes/comboRoutes');
+const empleadoRoutes = require('./routes/empleadoRoutes');
 
 const app = express();
 
 // Inicializar el sistema de gestión de turnos
 const turnoManager = new TurnoStatusManager();
+
+// Middleware para logging de todas las requests
+app.use((req, res, next) => {
+    console.log(`📨 ${req.method} ${req.path} - IP: ${req.ip}`);
+    console.log('📋 Headers:', req.headers);
+    if (req.body && Object.keys(req.body).length > 0) {
+        console.log('📦 Body:', JSON.stringify(req.body, null, 2));
+    }
+    next();
+});
 
 // Configuración básica
 app.use(cors());
@@ -34,6 +45,7 @@ app.use('/api/clientes', clientRoutes);
 app.use('/api/turnos', turnoRoutes);
 app.use('/api/servicios', servicioRoutes);
 app.use('/api/combos', comboRoutes);
+app.use('/api/empleados', empleadoRoutes);
 app.use('/api/admin', adminRoutes); // Esta línea es clave
 
 // Ruta para manejar archivos HTML

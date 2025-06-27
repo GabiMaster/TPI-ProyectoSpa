@@ -998,360 +998,1202 @@ button:hover {
     pointer-events: auto;
 }
 
-/* Para el pop-up general */
+/* ============ DISPONIBILIDAD DE EMPLEADOS ============ */
+.schedule-container {
+    background-color: #d8f3dc; /* Verde muy claro */
+    border: 1px solid #2d6a4f; /* Verde oscuro */
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 20px;
+}
+
+.schedule-container h3 {
+    color: #2d6a4f; /* Verde oscuro */
+    margin-top: 0;
+    margin-bottom: 15px;
+}
+
+.schedule-item {
+    background-color: #fff5f7; /* Rosado claro */
+    border: 1px solid #ffb3c6; /* Borde rosado */
+    border-radius: 5px;
+    padding: 15px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.schedule-item-info {
+    flex: 1;
+}
+
+.schedule-item-time {
+    font-weight: bold;
+    color: #d14d72; /* Rosado fuerte */
+    font-size: 1.1rem;
+}
+
+.schedule-item-details {
+    color: #2d6a4f; /* Verde oscuro */
+    font-size: 0.9rem;
+    margin-top: 5px;
+}
+
+.schedule-item-status {
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.schedule-item-status.disponible {
+    background-color: #d8f3dc; /* Verde muy claro */
+    color: #2d6a4f; /* Verde oscuro */
+}
+
+.schedule-item-status.reservado {
+    background-color: #fff3cd; /* Amarillo claro */
+    color: #856404; /* Amarillo oscuro */
+}
+
+.schedule-item-status.atendido {
+    background-color: #d1ecf1; /* Azul claro */
+    color: #0c5460; /* Azul oscuro */
+}
+
+.validation-container {
+    background-color: #fff5f7; /* Rosado claro */
+    border: 2px solid #d14d72; /* Rosado fuerte */
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 20px;
+}
+
+.validation-container h3 {
+    color: #d14d72; /* Rosado fuerte */
+    margin-top: 0;
+    margin-bottom: 15px;
+}
+
+.validation-result {
+    padding: 10px 15px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    font-weight: bold;
+}
+
+.validation-result.disponible {
+    background-color: #d8f3dc; /* Verde muy claro */
+    color: #2d6a4f; /* Verde oscuro */
+    border: 1px solid #40916c; /* Verde medio */
+}
+
+.validation-result.conflicto {
+    background-color: #f8d7da; /* Rojo claro */
+    color: #721c24; /* Rojo oscuro */
+    border: 1px solid #dc3545; /* Rojo */
+}
+
+.empleado-checkbox {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+    padding: 10px;
+    background-color: #d8f3dc; /* Verde muy claro */
+    border-radius: 5px;
+    border: 1px solid #40916c; /* Verde medio */
+}
+
+.empleado-checkbox input[type="checkbox"] {
+    margin-right: 10px;
+    width: 18px;
+    height: 18px;
+}
+
+.empleado-checkbox label {
+    font-weight: normal;
+    color: #2d6a4f; /* Verde oscuro */
+    cursor: pointer;
+    flex: 1;
+}
+
+.no-schedule-message {
+    text-align: center;
+    color: #2d6a4f; /* Verde oscuro */
+    font-style: italic;
+    padding: 20px;
+}
+
+.button-group {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.action-button {
+    background-color: #40916c; /* Verde medio */
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s;
+}
+
+.action-button:hover {
+    background-color: #2d6a4f; /* Verde oscuro */
+}
+
+.form-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.form-buttons button {
+    flex: 1;
+    padding: 12px;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.form-buttons button[type="submit"],
+.form-buttons button[type="button"]:first-child {
+    background-color: #40916c; /* Verde medio */
+    color: white;
+    border: none;
+}
+
+.form-buttons button[type="submit"]:hover,
+.form-buttons button[type="button"]:first-child:hover {
+    background-color: #2d6a4f; /* Verde oscuro */
+}
+
+.form-buttons button[type="button"]:last-child {
+    background-color: #d14d72; /* Rosado fuerte */
+    color: white;
+    border: none;
+}
+
+.form-buttons button[type="button"]:last-child:hover {
+    background-color: #b23a5e; /* Rosado más oscuro */
+}
+
+/* ============ SISTEMA DE NOTIFICACIONES ============ */
+.notification-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+    max-width: 400px;
+}
+
+.notification {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 10px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    border-left: 5px solid;
+    opacity: 0;
+    transform: translateX(100%);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.notification.show {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.notification.success {
+    border-left-color: #2d6a4f;
+    background: linear-gradient(135deg, #f0f9ff 0%, #e6fffa 100%);
+}
+
+.notification.error {
+    border-left-color: #dc2626;
+    background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+}
+
+.notification.warning {
+    border-left-color: #d97706;
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+}
+
+.notification.conflict {
+    border-left-color: #7c3aed;
+    background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+}
+
+.notification-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.notification-icon {
+    font-size: 24px;
+    margin-right: 12px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.notification.success .notification-icon {
+    background: #2d6a4f;
+    color: white;
+}
+
+.notification.error .notification-icon {
+    background: #dc2626;
+    color: white;
+}
+
+.notification.warning .notification-icon {
+    background: #d97706;
+    color: white;
+}
+
+.notification.conflict .notification-icon {
+    background: #7c3aed;
+    color: white;
+}
+
+.notification-title {
+    font-weight: 600;
+    font-size: 16px;
+    color: #1f2937;
+    margin: 0;
+    flex: 1;
+}
+
+.notification-close {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: #6b7280;
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.notification-close:hover {
+    background: rgba(0, 0, 0, 0.1);
+    color: #374151;
+}
+
+.notification-message {
+    color: #4b5563;
+    line-height: 1.5;
+    margin-bottom: 15px;
+}
+
+.notification-details {
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: 8px;
+    padding: 12px;
+    margin-top: 12px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.notification-details h4 {
+    margin: 0 0 8px 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #374151;
+}
+
+.conflict-employee {
+    background: #fef3c7;
+    border: 1px solid #fbbf24;
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin: 8px 0;
+}
+
+.conflict-employee-name {
+    font-weight: 600;
+    color: #92400e;
+    margin-bottom: 4px;
+}
+
+.conflict-turns {
+    font-size: 13px;
+    color: #78350f;
+}
+
+.conflict-turn {
+    background: rgba(239, 68, 68, 0.1);
+    border-radius: 4px;
+    padding: 4px 8px;
+    margin: 2px 0;
+    display: inline-block;
+    font-family: monospace;
+}
+
+.notification-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 15px;
+}
+
+.notification-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.notification-btn.primary {
+    background: #2d6a4f;
+    color: white;
+}
+
+.notification-btn.primary:hover {
+    background: #1b4332;
+}
+
+.notification-btn.secondary {
+    background: #f3f4f6;
+    color: #374151;
+    border: 1px solid #d1d5db;
+}
+
+.notification-btn.secondary:hover {
+    background: #e5e7eb;
+}
+
+/* ============ POP-UPS DE SELECCIÓN ============ */
 .popup {
     position: fixed;
-    top: 10vh;
+    top: 50%;
     left: 50%;
-    transform: translateX(-50%);
-    background: #fff8fa;
-    border: 2px solid #d26a5f;
-    border-radius: 10px;
-    padding: 2em;
+    transform: translate(-50%, -50%);
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
     z-index: 1000;
     max-width: 600px;
-    max-height: 80vh;      /* Limita la altura máxima */
-    box-shadow: 0 4px 24px rgba(0,0,0,0.15);
-    overflow: hidden;      /* Oculta el overflow general */
+    width: 90%;
+    max-height: 80vh;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
 }
 
-/* El área de categorías de servicios tendrá scroll */
-#servicios-categorias, #empleados-lista {
-    flex: 1 1 auto;
-    overflow-y: auto;
-    margin-bottom: 1em;
-    max-height: 50vh;      /* Ajusta según tu preferencia */
+.popup.hidden {
+    display: none;
 }
 
-/* Los botones de acción quedan abajo y siempre visibles */
-.popup > div:last-child {
-    flex-shrink: 0;
-    background: #fff8fa;
-    padding-top: 1em;
-}
-.popup.hidden { display: none; }
-
-.categorias-botones {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1em;
-    justify-content: center;
-    margin: 2em 0;
-}
-
-.ver-turnos-btn {
-    background: #7bbfae;
-    color: white;
-    border: none;
-    padding: 1em 2em;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 1em;
-    transition: background 0.3s;
-}
-
-.ver-turnos-btn:hover {
-    background: #2d6a5f;
-}
-
-.turnos-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 1em;
-    max-height: 60vh;
-    overflow-y: auto;
-}
-
-.turno-card {
-    border: 2px solid #7bbfae;
-    border-radius: 8px;
-    padding: 1em;
-    background: #f8fff8;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-
-.turno-card:hover {
-    background: #e6fff7;
-    transform: translateY(-2px);
-}
-
-.turno-card.selected {
-    background: #d1ecf1;
-    border-color: #2d6a5f;
-}
-
-.seleccionar-turno-btn {
-    background: #d14d72;
-    color: white;
-    border: none;
-    padding: 0.5em 1em;
-    border-radius: 5px;
-    cursor: pointer;
+.popup::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
     width: 100%;
-    margin-top: 0.5em;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: -1;
 }
 
-.seleccionar-turno-btn:hover {
-    background: #b03e5e;
-}
-
-.categoria-section {
-    margin-bottom: 2em;
-    padding: 1em;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    background: #fff8fa;
-}
-
-.categoria-section h3 {
-    color: #d14d72;
-    margin-bottom: 1em;
-    font-size: 1.5em;
-}
-
-.turnos-continue-button {
-    background: #d14d72;
+.popup h3 {
+    background: linear-gradient(135deg, #2d6a4f 0%, #40916c 100%);
     color: white;
-    border: none;
-    padding: 1em 2em;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 1.1em;
-    margin-top: 2em;
-    width: 100%;
-}
-
-.turnos-continue-button:hover {
-    background: #b03e5e;
-}
-
-/* ============ RESUMEN DE RESERVA - ESTILOS UNIFICADOS ============ */
-.turnos-summary-container {
-    width: 350px;
-    min-width: 350px;
-    max-width: 350px;
-    background-color: #fff5f7;
-    border: 1px solid #ffb3c6;
-    border-radius: 10px;
+    margin: 0;
     padding: 20px;
-    box-shadow: 0 4px 8px rgba(45, 106, 79, 0.1);
-    position: sticky;
-    top: 20px;
-    height: fit-content;
-    flex-shrink: 0;
+    font-size: 18px;
+    border-radius: 12px 12px 0 0;
 }
 
-.turnos-summary-container h2 {
-    font-size: 1.5rem;
-    margin-bottom: 15px;
-    color: #d14d72;
-    font-weight: bold;
-    text-align: center;
+.popup-content {
+    padding: 20px;
+    overflow-y: auto;
+    flex: 1;
 }
 
-.turnos-summary-container p {
-    font-size: 1rem;
-    margin-bottom: 10px;
-    color: #2d6a4f;
-    line-height: 1.5;
-    display: block;
+.popup-actions {
+    padding: 15px 20px;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    background: #f9fafb;
+    border-radius: 0 0 12px 12px;
 }
 
-.turnos-summary-container p strong {
-    font-weight: bold;
-    color: #2d6a4f;
+/* ============ BOTONES DE POP-UPS ============ */
+.popup-btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    margin: 0 5px;
 }
 
-.turnos-summary-container span {
-    color: #2d6a4f;
+.popup-btn.primary {
+    background: #3b82f6;
+    color: white;
 }
 
-/* ==================== ADMIN TURNOS STYLES ==================== */
-.admin-table {
+.popup-btn.primary:hover {
+    background: #2563eb;
+    transform: translateY(-1px);
+}
+
+.popup-btn.secondary {
+    background: #6b7280;
+    color: white;
+}
+
+.popup-btn.secondary:hover {
+    background: #4b5563;
+    transform: translateY(-1px);
+}
+
+.popup-btn.success {
+    background: #10b981;
+    color: white;
+}
+
+.popup-btn.success:hover {
+    background: #059669;
+    transform: translateY(-1px);
+}
+
+/* ============ ESTILOS PARA TABLAS EN POP-UPS ============ */
+.popup table {
     width: 100%;
     border-collapse: collapse;
-    margin: 1rem 0;
+    font-size: 14px;
     background: white;
     border-radius: 8px;
     overflow: hidden;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.admin-table th,
-.admin-table td {
-    padding: 12px;
+.popup table th {
+    background: linear-gradient(135deg, #2d6a4f 0%, #40916c 100%);
+    color: white;
+    padding: 12px 8px;
     text-align: left;
-    border-bottom: 1px solid #e0e0e0;
-}
-
-.admin-table th {
-    background: #f8f9fa;
     font-weight: 600;
-    color: #495057;
+    font-size: 13px;
+    border-bottom: 2px solid #1b4332;
 }
 
-.admin-table tr:hover {
-    background: #f8f9fa;
+.popup table td {
+    padding: 10px 8px;
+    border-bottom: 1px solid #e5e7eb;
+    vertical-align: middle;
 }
 
-/* Filter buttons */
+.popup table tbody tr:hover {
+    background: #f0f9ff;
+}
+
+.popup table tbody tr:nth-child(even) {
+    background: #f9fafb;
+}
+
+.popup table tbody tr:nth-child(even):hover {
+    background: #f0f9ff;
+}
+
+/* Botones de acción en tablas */
+.popup table .action-btn {
+    padding: 4px 8px;
+    margin: 0 2px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.popup table .edit-btn {
+    background: #3b82f6;
+    color: white;
+}
+
+.popup table .edit-btn:hover {
+    background: #2563eb;
+    transform: translateY(-1px);
+}
+
+.popup table .delete-btn {
+    background: #ef4444;
+    color: white;
+}
+
+.popup table .delete-btn:hover {
+    background: #dc2626;
+    transform: translateY(-1px);
+}
+
+/* ============ ESTILOS DE VALIDACIÓN DE EMPLEADOS ============ */
+.validation-summary {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f0f9ff;
+    border: 1px solid #0ea5e9;
+    border-radius: 8px;
+}
+
+.validation-summary h4 {
+    margin: 0;
+    color: #0369a1;
+    font-size: 16px;
+}
+
+.validation-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 15px;
+    border-bottom: 1px solid #e5e7eb;
+    background: white;
+    transition: background-color 0.2s;
+}
+
+.validation-item:hover {
+    background-color: #f9fafb;
+}
+
+.validation-item:last-child {
+    border-bottom: none;
+}
+
+.empleado-info {
+    flex: 1;
+}
+
+.empleado-name {
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 2px;
+}
+
+.empleado-role {
+    font-size: 14px;
+    color: #6b7280;
+}
+
+.validation-status {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 500;
+    text-align: center;
+    min-width: 100px;
+}
+
+.validation-status.available {
+    background-color: #dcfce7;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+}
+
+.validation-status.busy {
+    background-color: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+
+.conflict-details {
+    width: 100%;
+    margin-top: 8px;
+    padding: 8px 12px;
+    background-color: #fef2f2;
+    border-radius: 6px;
+    border-left: 3px solid #ef4444;
+}
+
+.conflict-details small {
+    color: #7f1d1d;
+    font-style: italic;
+}
+
+.conflict-turnos {
+    margin-top: 4px;
+    font-size: 12px;
+    color: #991b1b;
+    font-weight: 500;
+}
+
+/* ============ LISTAS CON SCROLL MEJORADAS ============ */
+.scrollable-list {
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: white;
+}
+
+.scrollable-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.scrollable-list::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+}
+
+.scrollable-list::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #2d6a4f 0%, #40916c 100%);
+    border-radius: 4px;
+}
+
+.scrollable-list::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #1b4332 0%, #2d6a4f 100%);
+}
+
+/* Items de lista */
+.list-item {
+    padding: 12px 16px;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background 0.2s ease;
+}
+
+.list-item:hover {
+    background: #f0f9ff;
+}
+
+.list-item:last-child {
+    border-bottom: none;
+}
+
+.list-item-content {
+    flex: 1;
+}
+
+.list-item-title {
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 4px;
+}
+
+.list-item-subtitle {
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.list-item-actions {
+    display: flex;
+    gap: 8px;
+}
+
+/* ============ FILTROS Y BOTONES DE ESTADO ============ */
 .filter-buttons {
     display: flex;
-    gap: 10px;
-    margin-bottom: 1rem;
     flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #e5e7eb;
 }
 
 .filter-btn {
     padding: 8px 16px;
-    border: 2px solid #d4a574;
-    background: white;
-    color: #d4a574;
+    border: 2px solid #e5e7eb;
     border-radius: 20px;
+    background: white;
+    color: #6b7280;
+    font-size: 13px;
+    font-weight: 500;
     cursor: pointer;
     transition: all 0.3s ease;
-    font-size: 14px;
 }
 
 .filter-btn:hover {
-    background: #f0e6d6;
+    border-color: #2d6a4f;
+    color: #2d6a4f;
+    transform: translateY(-1px);
 }
 
 .filter-btn.active {
-    background: #d4a574;
+    background: linear-gradient(135deg, #2d6a4f 0%, #40916c 100%);
+    border-color: #2d6a4f;
     color: white;
+    box-shadow: 0 4px 12px rgba(45, 106, 79, 0.3);
 }
 
-/* Estado badges */
-.estado-badge {
+/* ============ CRONOGRAMA Y VALIDACIÓN ============ */
+.schedule-item, .validation-item {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.schedule-item:hover, .validation-item:hover {
+    border-color: #2d6a4f;
+    box-shadow: 0 4px 12px rgba(45, 106, 79, 0.1);
+}
+
+.schedule-time {
+    font-weight: 600;
+    color: #2d6a4f;
+    font-size: 16px;
+}
+
+.schedule-service {
+    color: #1f2937;
+    margin: 4px 0;
+}
+
+.schedule-client {
+    color: #6b7280;
+    font-size: 14px;
+}
+
+.validation-status {
+    display: inline-block;
     padding: 4px 12px;
-    border-radius: 20px;
+    border-radius: 12px;
     font-size: 12px;
     font-weight: 600;
-    text-transform: capitalize;
+    text-transform: uppercase;
 }
 
-.estado-disponible {
-    background: #e8f5e8;
-    color: #28a745;
+.validation-status.available {
+    background: #d1fae5;
+    color: #059669;
 }
 
-.estado-reservado {
-    background: #e3f2fd;
-    color: #1976d2;
+.validation-status.busy {
+    background: #fee2e2;
+    color: #dc2626;
 }
 
-.estado-atendido {
-    background: #e8f5e8;
-    color: #28a745;
+.validation-status.conflict {
+    background: #fef3c7;
+    color: #d97706;
 }
 
-.estado-cancelado {
-    background: #ffebee;
-    color: #dc3545;
+/* ============ EMPLEADOS EN VALIDACIÓN ============ */
+.validation-empleados-list {
+    max-height: 250px;
+    overflow-y: auto;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: #f9fafb;
 }
 
-.estado-expirado {
-    background: #fff3e0;
-    color: #ff9800;
+.validation-empleado-item {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    border-bottom: 1px solid #e5e7eb;
+    background: white;
+    margin: 2px;
+    border-radius: 6px;
 }
 
-.estado-no_realizado {
-    background: #fce4ec;
-    color: #e91e63;
+.validation-empleado-item:last-child {
+    border-bottom: none;
 }
 
-/* Action buttons */
-.btn-confirmar {
-    background: #28a745;
-    color: white;
-    border: none;
-    padding: 6px 12px;
-    border-radius: 4px;
+.validation-empleado-item input[type="checkbox"] {
+    margin-right: 12px;
+    width: 18px;
+    height: 18px;
+    accent-color: #2d6a4f;
+}
+
+.validation-empleado-info {
+    flex: 1;
+}
+
+.validation-empleado-name {
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.validation-empleado-role {
+    font-size: 12px;
+    color: #6b7280;
+}
+
+/* ============ RESPONSIVE PARA POP-UPS ============ */
+@media (max-width: 768px) {
+    .popup {
+        width: 95%;
+        max-height: 90vh;
+    }
+
+    .popup table {
+        font-size: 12px;
+    }
+
+    .popup table th,
+    .popup table td {
+        padding: 8px 4px;
+    }
+
+    .filter-buttons {
+        justify-content: center;
+    }
+
+    .filter-btn {
+        font-size: 12px;
+        padding: 6px 12px;
+    }
+
+    .schedule-item, .validation-item {
+        padding: 12px;
+    }
+}
+
+/* ============ ANIMACIONES SUAVES ============ */
+.popup.show {
+    animation: popupShow 0.3s ease-out;
+}
+
+@keyframes popupShow {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
+.filter-btn, .list-item, .schedule-item, .validation-item {
+    transition: all 0.2s ease;
+}
+
+/* ============ ESTILOS PARA POP-UPS DE SELECCIÓN DE SERVICIOS Y EMPLEADOS ============ */
+.categoria-servicios {
+    margin-bottom: 20px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 15px;
+    background: #f9fafb;
+}
+
+.categoria-titulo {
+    margin: 0 0 12px 0;
+    color: #374151;
+    font-size: 16px;
+    font-weight: 600;
+    border-bottom: 2px solid #d1d5db;
+    padding-bottom: 8px;
+}
+
+.categoria-items {
+    display: grid;
+    gap: 8px;
+}
+
+.servicio-btn, .empleado-btn {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    background: white;
     cursor: pointer;
-    margin-right: 5px;
+    transition: all 0.2s ease;
+    text-align: left;
+}
+
+.servicio-btn:hover, .empleado-btn:hover {
+    border-color: #3b82f6;
+    background: #f0f9ff;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.servicio-btn.selected, .empleado-btn.selected {
+    border-color: #10b981;
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.servicio-btn.selected:hover, .empleado-btn.selected:hover {
+    border-color: #059669;
+    background: #a7f3d0;
+}
+
+.servicio-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.servicio-nombre {
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 4px;
+}
+
+.servicio-detalles {
+    font-size: 14px;
+    color: #6b7280;
+    line-height: 1.3;
+}
+
+.servicio-precio-duracion, .servicio-duracion-container {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+}
+
+.servicio-duracion {
     font-size: 12px;
+    color: #6b7280;
+    background: #f3f4f6;
+    padding: 2px 6px;
+    border-radius: 10px;
 }
 
-.btn-confirmar:hover {
-    background: #218838;
+.empleado-info {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    gap: 12px;
+    position: relative;
 }
 
-.btn-cancelar {
-    background: #dc3545;
+.empleado-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #3b82f6;
     color: white;
-    border: none;
-    padding: 6px 12px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+    flex-shrink: 0;
 }
 
-.btn-cancelar:hover {
-    background: #c82333;
+.empleado-detalles {
+    flex: 1;
 }
 
-.cancelar-turno-btn {
-    background: #dc3545;
+.empleado-nombre {
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 2px;
+}
+
+.empleado-especialidad {
+    font-size: 14px;
+    color: #6b7280;
+}
+
+.seleccion-contador {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: #10b981;
     color: white;
-    border: none;
-    padding: 6px 12px;
-    border-radius: 4px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    border: 2px solid white;
+}
+
+/* Estilos para elementos seleccionados mostrados */
+#servicios-seleccionados, #empleados-seleccionados {
+    margin-top: 15px;
+    padding: 12px;
+    background: #f0f9ff;
+    border: 1px solid #3b82f6;
+    border-radius: 8px;
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+}
+
+/* ============ ESTILOS PARA POP-UP DE TURNOS DISPONIBLES ============ */
+#available-turnos-popup {
+    max-width: 800px;
+    width: 95%;
+}
+
+.turnos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+    max-height: 500px;
+    overflow-y: auto;
+    padding: 10px;
+}
+
+.turno-card {
+    background: white;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 16px;
     cursor: pointer;
-    font-size: 12px;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.cancelar-turno-btn:hover {
-    background: #c82333;
+.turno-card:hover {
+    border-color: #3b82f6;
+    background: #f0f9ff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
-.no-cancel-text {
+.turno-card.selected {
+    border-color: #10b981;
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.turno-fecha-hora {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.turno-fecha {
+    font-weight: 700;
+    font-size: 16px;
+    color: #1f2937;
+}
+
+.turno-hora {
+    background: #3b82f6;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.turno-servicios {
+    margin-bottom: 10px;
+}
+
+.turno-servicios-label {
     font-size: 12px;
-    color: #6c757d;
+    color: #6b7280;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.turno-servicios-lista {
+    color: #374151;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.turno-empleados {
+    margin-bottom: 10px;
+}
+
+.turno-empleados-label {
+    font-size: 12px;
+    color: #6b7280;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.turno-empleados-lista {
+    color: #374151;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.turno-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 12px;
+    padding-top: 8px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.turno-precio {
+    font-size: 18px;
+    font-weight: 700;
+    color: #059669;
+}
+
+.turno-duracion {
+    background: #f3f4f6;
+    color: #6b7280;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+/* Estilo para cuando no hay turnos */
+.no-turnos {
+    text-align: center;
+    padding: 40px 20px;
+    color: #6b7280;
     font-style: italic;
 }
 
-/* Estilos responsivos mejorados */
-@media (max-width: 1024px) {
-    .filter-buttons {
-        gap: 5px;
+/* Responsive para turnos */
+@media (max-width: 768px) {
+    .turnos-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
     }
     
-    .filter-btn {
-        font-size: 12px;
-        padding: 6px 10px;
+    .turno-fecha-hora {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
     }
     
-    .admin-table th,
-    .admin-table td {
-        font-size: 12px;
-        padding: 8px 6px;
-    }
-    
-    .estado-badge {
-        font-size: 10px;
-        padding: 2px 8px;
+    .turno-footer {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
     }
 }
 
-@media (max-width: 600px) {
-    .admin-table {
-        font-size: 10px;
-    }
-    
-    .btn-confirmar,
-    .btn-cancelar,
-    .cancelar-turno-btn {
-        padding: 4px 8px;
-        font-size: 10px;
-    }
-    
-    .filter-buttons {
-        justify-content: flex-start;
-        overflow-x: auto;
-        padding: 5px 0;
-    }
-}
+/* ============ ESTILOS PARA CRONOGRAMA DE EMPLEADOS ============ */

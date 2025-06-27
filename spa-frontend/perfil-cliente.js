@@ -1,4 +1,5 @@
 document.addEventListener('DOMContentLoaded', async () => {
+    const API_BASE_URL = 'http://localhost:3000/api';
     const token = localStorage.getItem('token');
     if (!token) {
         window.location.href = 'login.html';
@@ -13,13 +14,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         // Obtener datos del cliente
-        const response = await fetch(`https://9plm87v2-3000.brs.devtunnels.ms/api/clientes/${payload.id}`, {
+        const response = await fetch(`${API_BASE_URL}/clientes/${payload.id}`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
         });
 
-        if (!response.ok) throw new Error('Error al obtener datos');
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Error al obtener datos');
+        }
 
         const cliente = await response.json();
         
@@ -36,10 +40,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             const token = localStorage.getItem('token');
             const historialDiv = document.getElementById('historial-reservas');
             try {
-                const response = await fetch('https://9plm87v2-3000.brs.devtunnels.ms/api/turnos/historial', {
+                const response = await fetch(`${API_BASE_URL}/turnos/historial`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
-                if (!response.ok) throw new Error('No se pudo obtener el historial');
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'No se pudo obtener el historial');
+                }
                 const turnos = await response.json();
 
                 if (turnos.length === 0) {
@@ -121,7 +128,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             }
                             
                             const token = localStorage.getItem('token');
-                            const response = await fetch(`https://9plm87v2-3000.brs.devtunnels.ms/api/turnos/cancelar/${idTurno}`, {
+                            const response = await fetch(`${API_BASE_URL}/turnos/cancelar/${idTurno}`, {
                                 method: 'PATCH',
                                 headers: { 'Authorization': `Bearer ${token}` }
                             });

@@ -69,8 +69,139 @@
     });
     </script>
 
+    <!-- Contenedor de notificaciones -->
+    <div id="notification-container" class="notification-container"></div>
+
     <h1 class="admin-title">Panel de Administración</h1>
     <section class="admin-container">
+        
+        <!-- Sección de Gestión de Administradores -->
+        <div class="admin-section">
+            <h2>Gestión de Administradores</h2>
+            <div class="button-group">
+                <button id="add-admin" class="action-button">➕ Añadir Administrador</button>
+                <button id="view-admins" class="action-button">👥 Ver Administradores</button>
+            </div>
+        </div>
+
+        <!-- Formulario para añadir administrador (oculto inicialmente) -->
+        <div id="admin-form-container" class="admin-section hidden">
+            <h2>Añadir Administrador</h2>
+            <form id="admin-form">
+                <div class="form-group">
+                    <label for="admin-nombre">Nombre:</label>
+                    <input type="text" id="admin-nombre" name="nombre" required>
+                </div>
+                <div class="form-group">
+                    <label for="admin-apellido">Apellido:</label>
+                    <input type="text" id="admin-apellido" name="apellido" required>
+                </div>
+                <div class="form-group">
+                    <label for="admin-email">Correo Electrónico:</label>
+                    <input type="email" id="admin-email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="admin-telefono">Teléfono:</label>
+                    <input type="text" id="admin-telefono" name="telefono" required>
+                </div>
+                <div class="form-buttons">
+                    <button type="submit">Guardar</button>
+                    <button type="button" id="cancel-admin">Cancelar</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Pop-up Lista de administradores -->
+        <div id="admins-popup" class="popup hidden">
+            <h3>Lista de Administradores</h3>
+            <div class="popup-content">
+                <table id="admins-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nombre</th>
+                            <th>Email</th>
+                            <th>Teléfono</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <div class="popup-actions">
+                <button type="button" id="cerrar-admins-popup" class="popup-btn secondary">Cerrar</button>
+            </div>
+        </div>
+
+        <!-- Sección de Gestión de Empleados -->
+        <div class="admin-section">
+            <h2>Gestión de Empleados</h2>
+            <div class="button-group">
+                <button id="add-employee" class="action-button">➕ Añadir Empleado</button>
+                <button id="view-employees" class="action-button">👥 Ver Empleados</button>
+            </div>
+        </div>
+        
+        <!-- Formulario para añadir empleado -->
+        <div id="employee-form-container" class="admin-section hidden">
+            <h2>Añadir Empleado</h2>
+            <form id="employee-form">
+                <div class="form-group">
+                    <label for="employee-nombre">Nombre:</label>
+                    <input type="text" id="employee-nombre" name="nombre" required>
+                </div>
+                <div class="form-group">
+                    <label for="employee-apellido">Apellido:</label>
+                    <input type="text" id="employee-apellido" name="apellido" required>
+                </div>
+                <div class="form-group">
+                    <label for="employee-email">Correo Electrónico:</label>
+                    <input type="email" id="employee-email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="employee-telefono">Teléfono:</label>
+                    <input type="text" id="employee-telefono" name="telefono" required>
+                </div>
+                <div class="form-group">
+                    <label for="employee-puesto">Especialidad:</label>
+                    <input type="text" id="employee-puesto" name="puesto" required>
+                </div>
+                <div class="form-buttons">
+                    <button type="submit">Guardar</button>
+                    <button type="button" id="cancel-employee">Cancelar</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Pop-up Lista de empleados -->
+        <div id="employees-popup" class="popup hidden">
+            <h3>Lista de Empleados</h3>
+            <div class="popup-content">
+                <table id="employees-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nombre</th>
+                            <th>Email</th>
+                            <th>Especialidad</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <div class="popup-actions">
+                <button type="button" id="cerrar-employees-popup" class="popup-btn secondary">Cerrar</button>
+            </div>
+        </div>
+
+        <div id="asignar-servicios-container" class="admin-section hidden">
+            <h2>Asignar Servicios a Empleado</h2>
+            <div id="servicios-empleado-list"></div>
+            <button id="guardar-servicios-empleado" class="form-button">Guardar Cambios</button>
+            <button id="cancelar-servicios-empleado" class="form-button">Cancelar</button>
+        </div>
+
         <div class="admin-section">
             <h2>Gestión de Servicios</h2>
             <div class="button-group">
@@ -96,11 +227,6 @@
                 <div class="form-group">
                     <label for="duracion">Duración (min):</label>
                     <input type="number" id="duracion" name="duracion" required placeholder="Ej: 60">
-                </div>
-
-                <div class="form-group">
-                    <label for="precio">Precio:</label>
-                    <input type="number" id="precio" name="precio" step="0.01" required placeholder="Ej: 50.00">
                 </div>
 
                 <div class="form-group">
@@ -150,9 +276,21 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="combo-servicios">Servicios en el Combo:</label>
-                    <input type="text" id="combo-servicios" name="combo-servicios" placeholder="IDs de servicios separados por comas">
-                    <p class="notice">Ejemplo: 1, 2, 5</p>
+                    <label>Servicios en el Combo:</label>
+                    <button type="button" id="btn-seleccionar-servicios-combo">Seleccionar servicios</button>
+                    <div id="servicios-combo-seleccionados"></div>
+                </div>
+
+                <!-- Pop-up para seleccionar servicios del combo -->
+                <div id="servicios-combo-popup" class="popup hidden">
+                    <h3>Selecciona los servicios para el combo</h3>
+                    <div class="popup-content">
+                        <div id="servicios-combo-lista"></div>
+                    </div>
+                    <div class="popup-actions">
+                        <button type="button" id="cerrar-servicios-combo-popup" class="popup-btn secondary">Cancelar</button>
+                        <button type="button" id="guardar-servicios-combo-popup" class="popup-btn primary">Guardar selección</button>
+                    </div>
                 </div>
 
                 <div class="form-buttons">
@@ -179,22 +317,26 @@
                 <!-- Servicios -->
                 <button type="button" id="btn-seleccionar-servicios">Seleccionar servicios</button>
                 <div id="servicios-popup" class="popup hidden">
-                    <h3>Selecciona tus servicios:</h3>
-                    <div id="servicios-categorias"></div>
-                    <div style="margin-top:1em;">
-                        <button type="button" id="guardar-servicios-popup">Guardar selección</button>
-                        <button type="button" id="cerrar-servicios-popup">Cancelar</button>
+                    <h3>Selecciona los servicios</h3>
+                    <div class="popup-content">
+                        <div id="servicios-categorias"></div>
+                    </div>
+                    <div class="popup-actions">
+                        <button type="button" id="cerrar-servicios-popup" class="popup-btn secondary">Cancelar</button>
+                        <button type="button" id="guardar-servicios-popup" class="popup-btn primary">Guardar selección</button>
                     </div>
                 </div>
                 <div id="servicios-seleccionados"></div>
                 <!-- Empleados -->
                 <button type="button" id="btn-seleccionar-empleados">Seleccionar empleados</button>
                 <div id="empleados-popup" class="popup hidden">
-                    <h3>Selecciona los empleados:</h3>
-                    <div id="empleados-lista"></div>
-                    <div style="margin-top:1em;">
-                        <button type="button" id="guardar-empleados-popup">Guardar selección</button>
-                        <button type="button" id="cerrar-empleados-popup">Cancelar</button>
+                    <h3>Selecciona los empleados</h3>
+                    <div class="popup-content">
+                        <div id="empleados-lista"></div>
+                    </div>
+                    <div class="popup-actions">
+                        <button type="button" id="cerrar-empleados-popup" class="popup-btn secondary">Cancelar</button>
+                        <button type="button" id="guardar-empleados-popup" class="popup-btn primary">Guardar selección</button>
                     </div>
                 </div>
                 <div id="empleados-seleccionados"></div>
@@ -221,133 +363,94 @@
             </form>
         </div>
 
-        <!-- Sección de Gestión de Administradores -->
+        <!-- Sección de Disponibilidad de Empleados -->
         <div class="admin-section">
-            <h2>Gestión de Administradores</h2>
+            <h2>Disponibilidad de Empleados</h2>
             <div class="button-group">
-                <button id="add-admin" class="action-button">➕ Añadir Administrador</button>
-                <button id="view-admins" class="action-button">👥 Ver Administradores</button>
+                <button id="check-employee-schedule" class="action-button">📅 Ver Cronograma</button>
+                <button id="validate-assignment" class="action-button">✅ Validar Asignación</button>
             </div>
         </div>
 
-        <!-- Formulario para añadir administrador (oculto inicialmente) -->
-        <div id="admin-form-container" class="admin-section hidden">
-            <h2>Añadir Administrador</h2>
-            <form id="admin-form">
-                <div class="form-group">
-                    <label for="admin-nombre">Nombre:</label>
-                    <input type="text" id="admin-nombre" name="nombre" required>
+        <!-- Formulario para ver cronograma de empleados -->
+        <div id="schedule-form-container" class="admin-section hidden">
+            <h2>Cronograma de Empleados</h2>
+            <div class="form-group">
+                <label for="schedule-fecha">Fecha:</label>
+                <input type="date" id="schedule-fecha" required>
+            </div>
+            <div class="form-group">
+                <label for="schedule-empleado">Empleado:</label>
+                <select id="schedule-empleado" required>
+                    <option value="">Seleccionar empleado...</option>
+                </select>
+            </div>
+            <div class="form-buttons">
+                <button type="button" id="load-schedule">Cargar Cronograma</button>
+                <button type="button" id="cancel-schedule">Cancelar</button>
+            </div>
+            
+            <!-- Pop-up para mostrar el cronograma -->
+            <div id="schedule-popup" class="popup hidden">
+                <h3>Cronograma del Empleado</h3>
+                <div class="popup-content">
+                    <div id="schedule-content"></div>
                 </div>
-                <div class="form-group">
-                    <label for="admin-apellido">Apellido:</label>
-                    <input type="text" id="admin-apellido" name="apellido" required>
+                <div class="popup-actions">
+                    <button type="button" id="cerrar-schedule-popup" class="popup-btn secondary">Cerrar</button>
                 </div>
-                <div class="form-group">
-                    <label for="admin-email">Correo Electrónico:</label>
-                    <input type="email" id="admin-email" name="email" required>
-                </div>
-                <div class="form-group">
-                    <label for="admin-telefono">Teléfono:</label>
-                    <input type="text" id="admin-telefono" name="telefono" required>
-                </div>
-                <div class="form-buttons">
-                    <button type="submit">Guardar</button>
-                    <button type="button" id="cancel-admin">Cancelar</button>
-                </div>
-            </form>
-        </div>
-
-        <!-- Lista de administradores (oculta inicialmente) -->
-        <div id="admins-list-container" class="admin-section hidden">
-            <h2>Lista de Administradores</h2>
-            <table id="admins-table">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Nombre</th>
-                        <th>Email</th>
-                        <th>Teléfono</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-            <button id="close-admins-list" class="action-button">Cerrar</button>
-        </div>
-
-        <div class="admin-section">
-            <h2>Gestión de Empleados</h2>
-            <div class="button-group">
-                <button id="add-employee" class="action-button">➕ Añadir Empleado</button>
-                <button id="view-employees" class="action-button">👥 Ver Empleados</button>
             </div>
         </div>
-        
-        <!-- Sección de Gestión de Empleados -->
-        <div id="employee-form-container" class="admin-section hidden">
-            <h2>Añadir Empleado</h2>
-            <form id="employee-form">
-                <div class="form-group">
-                    <label for="employee-nombre">Nombre:</label>
-                    <input type="text" id="employee-nombre" name="nombre" required>
-                </div>
-                <div class="form-group">
-                    <label for="employee-apellido">Apellido:</label>
-                    <input type="text" id="employee-apellido" name="apellido" required>
-                </div>
-                <div class="form-group">
-                    <label for="employee-email">Correo Electrónico:</label>
-                    <input type="email" id="employee-email" name="email" required>
-                </div>
-                <div class="form-group">
-                    <label for="employee-telefono">Teléfono:</label>
-                    <input type="text" id="employee-telefono" name="telefono" required>
-                </div>
-                <div class="form-group">
-                    <label for="employee-puesto">Especialidad:</label>
-                    <input type="text" id="employee-puesto" name="puesto" required>
-                </div>
-                <div class="form-buttons">
-                    <button type="submit">Guardar</button>
-                    <button type="button" id="cancel-employee">Cancelar</button>
-                </div>
-            </form>
-        </div>
 
-        <div id="employees-list-container" class="admin-section hidden">
-            <h2>Lista de Empleados</h2>
-            <table id="employees-table">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Nombre</th>
-                        <th>Email</th>
-                        <th>Especialidad</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-            <button id="close-employees-list" class="action-button">Cerrar</button>
-        </div>
-
-        <div id="asignar-servicios-container" class="admin-section hidden">
-            <h2>Asignar Servicios a Empleado</h2>
-            <div id="servicios-empleado-list"></div>
-            <button id="guardar-servicios-empleado" class="form-button">Guardar Cambios</button>
-            <button id="cancelar-servicios-empleado" class="form-button">Cancelar</button>
-        </div>
-
-        <h2>Turnos Pendientes</h2>
-        <table id="tabla-turnos-pendientes"></table>
-
-        <!-- Lista de turnos disponibles -->
-        <div id="available-turnos-container" class="admin-section hidden">
-            <h2>Turnos Disponibles</h2>
-            <div id="available-turnos-list">
-                <p>Cargando turnos disponibles...</p>
+        <!-- Formulario para validar asignación -->
+        <div id="validation-form-container" class="admin-section hidden">
+            <h2>Validar Asignación de Empleados</h2>
+            <div class="form-group">
+                <label for="validation-fecha">Fecha:</label>
+                <input type="date" id="validation-fecha" required>
             </div>
-            <button id="close-available-turnos" class="action-button">Cerrar</button>
+            <div class="form-group">
+                <label for="validation-hora-inicio">Hora de inicio:</label>
+                <input type="time" id="validation-hora-inicio" required>
+            </div>
+            <div class="form-group">
+                <label for="validation-hora-fin">Hora de fin:</label>
+                <input type="time" id="validation-hora-fin" required>
+            </div>
+            <div class="form-group">
+                <label>Empleados a validar:</label>
+                <div id="validation-empleados-list">
+                    <!-- Se llenará dinámicamente -->
+                </div>
+            </div>
+            <div class="form-buttons">
+                <button type="button" id="validate-employees">Validar Disponibilidad</button>
+                <button type="button" id="cancel-validation">Cancelar</button>
+            </div>
+            
+            <!-- Pop-up para mostrar resultados de validación -->
+            <div id="validation-popup" class="popup hidden">
+                <h3>Resultados de Validación</h3>
+                <div class="popup-content">
+                    <div id="validation-content"></div>
+                </div>
+                <div class="popup-actions">
+                    <button type="button" id="cerrar-validation-popup" class="popup-btn secondary">Cerrar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pop-up Lista de turnos disponibles -->
+        <div id="available-turnos-popup" class="popup hidden">
+            <h3>Turnos Disponibles</h3>
+            <div class="popup-content">
+                <div id="available-turnos-list">
+                    <p>Cargando turnos disponibles...</p>
+                </div>
+            </div>
+            <div class="popup-actions">
+                <button type="button" id="cerrar-available-turnos-popup" class="popup-btn secondary">Cerrar</button>
+            </div>
         </div>
 
         <!-- Nueva sección: Historial de Turnos -->
@@ -358,25 +461,29 @@
             </div>
         </div>
 
-        <!-- Contenedor del historial de turnos -->
-        <div id="historial-turnos-container" class="admin-section hidden">
-            <h2>Historial de Turnos</h2>
-            <div class="filter-buttons">
-                <button id="filter-confirmado" class="filter-btn active">Confirmados</button>
-                <button id="filter-completado" class="filter-btn">Completados</button>
-                <button id="filter-cancelado" class="filter-btn">Cancelados</button>
-                <button id="filter-expirado" class="filter-btn">Expirados</button>
-                <button id="filter-no-realizado" class="filter-btn">No Realizados</button>
-                <button id="filter-todos" class="filter-btn">Todos</button>
+        <!-- Pop-up Contenedor del historial de turnos -->
+        <div id="historial-turnos-popup" class="popup hidden">
+            <h3>Historial de Turnos</h3>
+            <div class="popup-content">
+                <div class="filter-buttons">
+                    <button id="filter-confirmado" class="filter-btn active">Confirmados</button>
+                    <button id="filter-completado" class="filter-btn">Completados</button>
+                    <button id="filter-cancelado" class="filter-btn">Cancelados</button>
+                    <button id="filter-expirado" class="filter-btn">Expirados</button>
+                    <button id="filter-no-realizado" class="filter-btn">No Realizados</button>
+                    <button id="filter-todos" class="filter-btn">Todos</button>
+                </div>
+                <div id="historial-turnos-list">
+                    <p>Cargando historial...</p>
+                </div>
             </div>
-            <div id="historial-turnos-list">
-                <p>Cargando historial...</p>
+            <div class="popup-actions">
+                <button type="button" id="cerrar-historial-turnos-popup" class="popup-btn secondary">Cerrar</button>
             </div>
-            <button id="close-historial-turnos" class="action-button">Cerrar</button>
         </div>
     </section>
 
-    <script src="admin.js"></script>
+    <script src="admin.js?v=1735302800"></script>
     <script>
         // Mostrar/ocultar nota para servicios grupales
         document.getElementById('categoria').addEventListener('change', function() {

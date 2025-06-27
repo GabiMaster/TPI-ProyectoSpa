@@ -3,207 +3,367 @@ const db = require('./db');
 class TurnoStatusManager {
     constructor() {
         this.intervalId = null;
+        this.isRunning = false;
     }
 
-    // Iniciar el sistema de monitoreo automático
+    /**
+     * Inicia el monitoreo automático cada 5 minutos
+     */
     start() {
-        console.log('🕐 Iniciando sistema de monitoreo de turnos...');
+        if (this.isRunning) {
+            console.log('🔄 TurnoStatusManager ya está ejecutándose');
+            return;
+        }
+
+        console.log('🚀 Iniciando TurnoStatusManager - Monitoreo cada 5 minutos');
+        this.isRunning = true;
         
         // Ejecutar inmediatamente
-        this.checkAndUpdateTurnos();
+        this.verificarYActualizarEstados();
         
         // Ejecutar cada 5 minutos
         this.intervalId = setInterval(() => {
-            this.checkAndUpdateTurnos();
+            this.verificarYActualizarEstados();
         }, 5 * 60 * 1000); // 5 minutos
     }
 
-    // Detener el sistema de monitoreo
+    /**
+     * Detiene el monitoreo automático
+     */
     stop() {
         if (this.intervalId) {
             clearInterval(this.intervalId);
             this.intervalId = null;
-            console.log('⏹️ Sistema de monitoreo de turnos detenido');
         }
+        this.isRunning = false;
+        console.log('🛑 TurnoStatusManager detenido');
     }
 
-    // Verificar y actualizar estados de turnos
-    async checkAndUpdateTurnos() {
+    /**
+     * Verifica y actualiza todos los estados de turnos según las reglas de negocio
+     */
+    async verificarYActualizarEstados() {
         try {
             console.log('🔍 Verificando estados de turnos...');
             
-            await this.expirarTurnosDisponibles();
-            await this.marcarTurnosNoRealizados();
+            // Auto-expiración: disponible → expirado
+            const expirados = await this.expirarTurnosDisponibles();
             
-            console.log('✅ Verificación de turnos completada');
+            // Auto-no realizado: reservado → no_realizado
+            const noRealizados = await this.marcarTurnosNoRealizados();
+            
+            console.log(`📊 Verificación completada - Expirados: ${expirados}, No realizados: ${noRealizados}`);
             
         } catch (error) {
-            console.error('❌ Error al verificar turnos:', error);
+            console.error('❌ Error en verificación de estados:', error);
         }
     }
 
-    // Expirar turnos disponibles que ya pasaron su fecha/hora
+    /**
+     * Marca turnos disponibles como expirados cuando pasa su hora de fin
+     */
     async expirarTurnosDisponibles() {
-        const query = `
-            UPDATE turno 
-            SET estado = 'expirado', 
-                fecha_modificacion = CURRENT_TIMESTAMP
-            WHERE estado = 'disponible' 
-            AND CONCAT(fecha, ' ', COALESCE(hora_fin, hora)) < NOW()
-        `;
-        
-        const [result] = await db.query(query);
-        
-        if (result.affectedRows > 0) {
-            console.log(`⏰ ${result.affectedRows} turnos disponibles han expirado (pasaron su fecha/hora)`);
-        }
-    }
-
-    // Marcar turnos reservados como no realizados si pasó su hora de finalización
-    async marcarTurnosNoRealizados() {
-        const query = `
-            UPDATE turno 
-            SET estado = 'no_realizado',
-                fecha_modificacion = CURRENT_TIMESTAMP
-            WHERE estado = 'reservado' 
-            AND CONCAT(fecha, ' ', hora_fin) < NOW()
-        `;
-        
-        const [result] = await db.query(query);
-        
-        if (result.affectedRows > 0) {
-            console.log(`⚠️ ${result.affectedRows} turnos reservados marcados como no realizados`);
-        }
-    }
-
-    // Verificar si un turno puede ser reservado (más de 48 horas)
-    async puedeSerReservado(turnoId) {
-        const [rows] = await db.query(`
-            SELECT TIMESTAMPDIFF(HOUR, NOW(), CONCAT(fecha, ' ', hora)) as horas_restantes
-            FROM turno 
-            WHERE id_turno = ? AND estado = 'disponible'
-        `, [turnoId]);
-        
-        if (rows.length === 0) {
-            return false;
-        }
-        
-        return rows[0].horas_restantes >= 48;
-    }
-
-    // Verificar si un turno puede ser cancelado por el cliente (más de 48 horas)
-    async puedeCancelarCliente(turnoId, clienteId) {
-        const [rows] = await db.query(`
-            SELECT TIMESTAMPDIFF(HOUR, NOW(), CONCAT(fecha, ' ', hora)) as horas_restantes
-            FROM turno 
-            WHERE id_turno = ? AND id_cliente = ? AND estado = 'reservado'
-        `, [turnoId, clienteId]);
-        
-        if (rows.length === 0) {
-            return false;
-        }
-        
-        return rows[0].horas_restantes >= 48;
-    }
-
-    // Reservar un turno
-    async reservarTurno(turnoId, clienteId) {
         try {
-            // Verificar si puede ser reservado
-            const puedeReservar = await this.puedeSerReservado(turnoId);
-            if (!puedeReservar) {
-                throw new Error('El turno no puede ser reservado (menos de 48 horas o no disponible)');
-            }
-
-            // Reservar el turno
             const [result] = await db.query(`
                 UPDATE turno 
-                SET estado = 'reservado', 
-                    id_cliente = ?, 
-                    fecha_reserva = CURRENT_TIMESTAMP,
-                    fecha_modificacion = CURRENT_TIMESTAMP
-                WHERE id_turno = ? AND estado = 'disponible'
-            `, [clienteId, turnoId]);
+                SET estado = 'expirado', fecha_modificacion = NOW()
+                WHERE estado = 'disponible' 
+                AND CONCAT(fecha, ' ', IFNULL(hora_fin, ADDTIME(hora, SEC_TO_TIME(duracion_total * 60)))) < NOW()
+            `);
 
-            if (result.affectedRows === 0) {
-                throw new Error('No se pudo reservar el turno');
+            if (result.affectedRows > 0) {
+                console.log(`⏰ ${result.affectedRows} turnos marcados como expirados`);
             }
 
-            console.log(`📅 Turno ${turnoId} reservado por cliente ${clienteId}`);
-            return true;
-
+            return result.affectedRows;
         } catch (error) {
-            console.error('Error al reservar turno:', error);
-            throw error;
+            console.error('❌ Error al expirar turnos:', error);
+            return 0;
         }
     }
 
-    // Confirmar turno (marcar como atendido) - Solo admin
+    /**
+     * Marca turnos reservados como no_realizado cuando pasa su hora de fin
+     */
+    async marcarTurnosNoRealizados() {
+        try {
+            const [result] = await db.query(`
+                UPDATE turno 
+                SET estado = 'no_realizado', fecha_modificacion = NOW()
+                WHERE estado = 'reservado' 
+                AND CONCAT(fecha, ' ', IFNULL(hora_fin, ADDTIME(hora, SEC_TO_TIME(duracion_total * 60)))) < NOW()
+            `);
+
+            if (result.affectedRows > 0) {
+                console.log(`❌ ${result.affectedRows} turnos marcados como no realizados`);
+            }
+
+            return result.affectedRows;
+        } catch (error) {
+            console.error('❌ Error al marcar turnos no realizados:', error);
+            return 0;
+        }
+    }
+
+    /**
+     * Verifica si se puede reservar/cancelar un turno (regla 48h)
+     */
+    static puedeModificarTurno(fechaTurno, horaTurno, esAdmin = false) {
+        if (esAdmin) {
+            return { puede: true, razon: 'Admin override' };
+        }
+
+        const fechaHoraTurno = new Date(`${fechaTurno} ${horaTurno}`);
+        const ahora = new Date();
+        const horasHastaElTurno = (fechaHoraTurno - ahora) / (1000 * 60 * 60);
+
+        if (horasHastaElTurno < 48) {
+            return {
+                puede: false,
+                razon: 'Se requieren mínimo 48 horas de anticipación',
+                horasRestantes: Math.round(horasHastaElTurno * 10) / 10
+            };
+        }
+
+        return {
+            puede: true,
+            horasRestantes: Math.round(horasHastaElTurno * 10) / 10
+        };
+    }
+
+    /**
+     * Reserva un turno para un cliente con validaciones
+     */
+    async reservarTurno(turnoId, clienteId, esAdmin = false) {
+        const conexion = await db.getConnection();
+        
+        try {
+            await conexion.beginTransaction();
+            
+            // Obtener datos del turno
+            const [turnos] = await conexion.query(
+                'SELECT * FROM turno WHERE id_turno = ?',
+                [turnoId]
+            );
+            
+            if (turnos.length === 0) {
+                throw new Error('Turno no encontrado');
+            }
+
+            const turno = turnos[0];
+
+            if (turno.estado !== 'disponible') {
+                throw new Error(`El turno no está disponible para reserva (Estado: ${turno.estado})`);
+            }
+
+            // Verificar regla de 48h
+            const validacion = TurnoStatusManager.puedeModificarTurno(turno.fecha, turno.hora, esAdmin);
+            if (!validacion.puede) {
+                throw new Error(validacion.razon);
+            }
+            
+            // Reservar el turno
+            await conexion.query(
+                'UPDATE turno SET id_cliente = ?, estado = ?, fecha_reserva = NOW(), fecha_modificacion = NOW() WHERE id_turno = ?',
+                [clienteId, 'reservado', turnoId]
+            );
+            
+            await conexion.commit();
+            
+            console.log(`✅ Turno ${turnoId} reservado para cliente ${clienteId} (${validacion.horasRestantes}h anticipación)`);
+            
+            return {
+                success: true,
+                mensaje: 'Turno reservado exitosamente',
+                horasAnticipacion: validacion.horasRestantes
+            };
+            
+        } catch (error) {
+            await conexion.rollback();
+            console.error('❌ Error al reservar turno:', error.message);
+            throw error;
+        } finally {
+            conexion.release();
+        }
+    }
+
+    /**
+     * Cancela un turno con validaciones
+     */
+    async cancelarTurno(turnoId, usuarioId, esAdmin = false) {
+        const conexion = await db.getConnection();
+        
+        try {
+            await conexion.beginTransaction();
+            
+            // Obtener datos del turno
+            const [turnos] = await conexion.query(
+                'SELECT * FROM turno WHERE id_turno = ?',
+                [turnoId]
+            );
+            
+            if (turnos.length === 0) {
+                throw new Error('Turno no encontrado');
+            }
+
+            const turno = turnos[0];
+
+            if (!['reservado', 'disponible'].includes(turno.estado)) {
+                throw new Error(`No se puede cancelar un turno en estado '${turno.estado}'`);
+            }
+
+            // Verificar permisos
+            if (!esAdmin && turno.id_cliente && turno.id_cliente != usuarioId) {
+                throw new Error('No tienes permisos para cancelar este turno');
+            }
+
+            // Verificar regla de 48h
+            const validacion = TurnoStatusManager.puedeModificarTurno(turno.fecha, turno.hora, esAdmin);
+            if (!validacion.puede) {
+                throw new Error(validacion.razon);
+            }
+            
+            // Cancelar el turno
+            await conexion.query(
+                'UPDATE turno SET estado = ?, id_cliente = NULL, fecha_modificacion = NOW() WHERE id_turno = ?',
+                ['cancelado', turnoId]
+            );
+            
+            await conexion.commit();
+            
+            console.log(`🚫 Turno ${turnoId} cancelado por usuario ${usuarioId} (${validacion.horasRestantes}h anticipación)`);
+            
+            return {
+                success: true,
+                mensaje: 'Turno cancelado exitosamente',
+                horasAnticipacion: validacion.horasRestantes
+            };
+            
+        } catch (error) {
+            await conexion.rollback();
+            console.error('❌ Error al cancelar turno:', error.message);
+            throw error;
+        } finally {
+            conexion.release();
+        }
+    }
+
+    /**
+     * Confirma un turno como atendido (solo admin)
+     */
     async confirmarTurno(turnoId) {
         try {
-            const [result] = await db.query(`
-                UPDATE turno 
-                SET estado = 'atendido',
-                    fecha_modificacion = CURRENT_TIMESTAMP
-                WHERE id_turno = ? AND estado = 'reservado'
-            `, [turnoId]);
+            const [result] = await db.query(
+                'UPDATE turno SET estado = ?, fecha_modificacion = NOW() WHERE id_turno = ? AND estado = ?',
+                ['atendido', turnoId, 'reservado']
+            );
 
             if (result.affectedRows === 0) {
-                throw new Error('No se pudo confirmar el turno');
+                throw new Error('Turno no encontrado o no está en estado reservado');
             }
 
             console.log(`✅ Turno ${turnoId} confirmado como atendido`);
-            return true;
+            
+            return {
+                success: true,
+                mensaje: 'Turno confirmado como atendido'
+            };
 
         } catch (error) {
-            console.error('Error al confirmar turno:', error);
+            console.error('❌ Error al confirmar turno:', error.message);
             throw error;
         }
     }
 
-    // Cancelar turno
-    async cancelarTurno(turnoId, clienteId = null) {
+    /**
+     * Obtiene estadísticas de turnos por estado
+     */
+    async obtenerEstadisticas() {
         try {
-            let query, params;
-            
-            if (clienteId) {
-                // Cliente cancelando - verificar las 48 horas
-                const puedeCancelar = await this.puedeCancelarCliente(turnoId, clienteId);
-                if (!puedeCancelar) {
-                    throw new Error('No puedes cancelar el turno (menos de 48 horas o no es tu turno)');
-                }
-                
-                query = `
-                    UPDATE turno 
-                    SET estado = 'cancelado',
-                        fecha_modificacion = CURRENT_TIMESTAMP
-                    WHERE id_turno = ? AND id_cliente = ? AND estado = 'reservado'
-                `;
-                params = [turnoId, clienteId];
-            } else {
-                // Admin cancelando - sin restricciones de tiempo
-                query = `
-                    UPDATE turno 
-                    SET estado = 'cancelado',
-                        fecha_modificacion = CURRENT_TIMESTAMP
-                    WHERE id_turno = ? AND estado = 'reservado'
-                `;
-                params = [turnoId];
-            }
+            const [stats] = await db.query(`
+                SELECT 
+                    estado,
+                    COUNT(*) as cantidad,
+                    DATE(fecha) as fecha
+                FROM turno 
+                WHERE fecha >= CURDATE() - INTERVAL 30 DAY
+                GROUP BY estado, DATE(fecha)
+                ORDER BY fecha DESC, estado
+            `);
 
-            const [result] = await db.query(query, params);
-
-            if (result.affectedRows === 0) {
-                throw new Error('No se pudo cancelar el turno');
-            }
-
-            console.log(`❌ Turno ${turnoId} cancelado`);
-            return true;
-
+            return stats;
         } catch (error) {
-            console.error('Error al cancelar turno:', error);
+            console.error('❌ Error al obtener estadísticas:', error);
             throw error;
         }
+    }
+
+    /**
+     * Actualiza automáticamente el estado de turnos basado en reglas de negocio
+     */
+    async actualizarEstadosAutomaticamente() {
+        try {
+            console.log('🔄 Actualizando estados de turnos automáticamente...');
+            
+            const ahora = new Date();
+            const fechaActual = ahora.toISOString().split('T')[0];
+            const horaActual = ahora.toTimeString().split(' ')[0];
+            
+            // 1. Marcar turnos como expirados (turnos disponibles que ya pasaron)
+            const [resultExpirados] = await this.db.query(`
+                UPDATE turno 
+                SET estado = 'expirado' 
+                WHERE estado = 'disponible' 
+                AND (fecha < ? OR (fecha = ? AND hora_fin < ?))
+            `, [fechaActual, fechaActual, horaActual]);
+            
+            if (resultExpirados.affectedRows > 0) {
+                console.log(`⏰ ${resultExpirados.affectedRows} turnos marcados como expirados`);
+            }
+            
+            // 2. Marcar turnos reservados no realizados (pasó la hora y sigue reservado)
+            const [resultNoRealizados] = await this.db.query(`
+                UPDATE turno 
+                SET estado = 'no_realizado' 
+                WHERE estado = 'reservado' 
+                AND (fecha < ? OR (fecha = ? AND hora_fin < ?))
+            `, [fechaActual, fechaActual, horaActual]);
+            
+            if (resultNoRealizados.affectedRows > 0) {
+                console.log(`❌ ${resultNoRealizados.affectedRows} turnos marcados como no realizados`);
+            }
+            
+            console.log('✅ Actualización automática de estados completada');
+            
+        } catch (error) {
+            console.error('❌ Error al actualizar estados automáticamente:', error.message);
+            throw error;
+        }
+    }
+
+    /**
+     * Inicia el proceso automático de actualización de estados
+     */
+    iniciarActualizacionAutomatica() {
+        // Ejecutar cada 15 minutos
+        setInterval(async () => {
+            try {
+                await this.actualizarEstadosAutomaticamente();
+            } catch (error) {
+                console.error('Error en actualización automática:', error.message);
+            }
+        }, 15 * 60 * 1000); // 15 minutos
+        
+        // Ejecutar una vez al inicio
+        setTimeout(async () => {
+            try {
+                await this.actualizarEstadosAutomaticamente();
+            } catch (error) {
+                console.error('Error en actualización inicial:', error.message);
+            }
+        }, 5000); // 5 segundos después del inicio
+        
+        console.log('🔄 Sistema de actualización automática de turnos iniciado');
     }
 }
 

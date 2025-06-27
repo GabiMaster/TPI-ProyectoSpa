@@ -26,7 +26,8 @@ const verifyToken = (req, res, next) => {
 
 // Login unificado
 router.post('/login', async (req, res) => {
-    const { email, contraseña } = req.body;
+    const { email, contraseña, password } = req.body;
+    const passwordToUse = contraseña || password; // Aceptar ambos campos
 
     try {
         // Buscar en todas las tablas
@@ -60,7 +61,7 @@ router.post('/login', async (req, res) => {
         }
 
         // Verificar contraseña
-        const match = await bcrypt.compare(contraseña, user.contraseña);
+        const match = await bcrypt.compare(passwordToUse, user.contraseña);
         if (!match) {
             return res.status(401).json({ error: 'Credenciales incorrectas' });
         }
@@ -271,19 +272,42 @@ router.put('/cancelar-turno/:id_turno', verifyToken, async (req, res) => {
     const id_empleado = req.user.id;
 
     try {
-        // Verificar que el turno esté asignado a este empleado
-        const [asignacion] = await db.query(
-            'SELECT * FROM turno_empleado WHERE id_turno = ? AND id_empleado = ?',
-            [id_turno, id_empleado]
-        );
+        // Verificar que el turno esté asignado a este empleado y obtener datos del turno
+        const [turnoData] = await db.query(`
+            SELECT t.*, te.id_empleado 
+            FROM turno t 
+            JOIN turno_empleado te ON t.id_turno = te.id_turno 
+            WHERE t.id_turno = ? AND te.id_empleado = ?
+        `, [id_turno, id_empleado]);
 
-        if (asignacion.length === 0) {
+        if (turnoData.length === 0) {
             return res.status(404).json({ error: 'Turno no encontrado o no asignado a este empleado' });
         }
 
-        // Quitar la asignación del empleado y cambiar estado a pendiente
+        const turno = turnoData[0];
+        
+        // Verificar restricciones de tiempo para cancelación
+        const fechaTurno = new Date(turno.fecha + ' ' + turno.hora_inicio);
+        const ahora = new Date();
+        const horasHastaTurno = (fechaTurno - ahora) / (1000 * 60 * 60);
+        
+        // No permitir cancelar si quedan menos de 24 horas
+        if (horasHastaTurno < 24) {
+            return res.status(400).json({ 
+                error: 'No se puede cancelar un turno con menos de 24 horas de anticipación' 
+            });
+        }
+        
+        // No permitir cancelar turnos ya completados o cancelados
+        if (turno.estado === 'completado' || turno.estado === 'cancelado') {
+            return res.status(400).json({ 
+                error: `No se puede cancelar un turno ${turno.estado}` 
+            });
+        }
+
+        // Quitar la asignación del empleado y cambiar estado a disponible
         await db.query('DELETE FROM turno_empleado WHERE id_turno = ? AND id_empleado = ?', [id_turno, id_empleado]);
-        await db.query('UPDATE turno SET estado = ? WHERE id_turno = ?', ['pendiente', id_turno]);
+        await db.query('UPDATE turno SET estado = ?, id_empleado = NULL WHERE id_turno = ?', ['disponible', id_turno]);
 
         res.json({ success: true, message: 'Turno cancelado exitosamente' });
     } catch (error) {

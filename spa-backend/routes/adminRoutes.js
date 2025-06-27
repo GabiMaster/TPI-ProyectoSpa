@@ -4,9 +4,13 @@ const jwt = require('jsonwebtoken');
 const db = require('../db');
 const verifyToken = require('../middleware/verifyToken');
 const { sendInvitationCode } = require('../utils/mailer');
+const EmpleadoScheduleManager = require('../empleadoScheduleManager');
 const router = express.Router();
 
 const SECRET_KEY = process.env.SECRET_KEY || 'tu_clave_secreta';
+
+// Instancia del gestor de horarios de empleados
+const empleadoScheduleManager = new EmpleadoScheduleManager();
 
 // Middleware para verificar admin
 const verifyAdmin = (req, res, next) => {
@@ -358,55 +362,365 @@ router.delete('/administradores/:id', verifyToken, verifyAdmin, async (req, res)
 // Crear turnos predefinidos (uno por cada empleado seleccionado)
 router.post('/turnos', verifyToken, verifyAdmin, async (req, res) => {
     console.log('📥 POST /api/admin/turnos BODY:', req.body);
-    const { servicios, empleados, fecha, hora_inicio, hora_fin, precio, duracion_total } = req.body;
+    console.log('🔒 Usuario autenticado:', req.user?.role);
+    
+    const { servicios, empleados, fecha, hora_inicio, hora_fin, precio_total, duracion_total } = req.body;
+    
+    console.log('📋 Datos recibidos:');
+    console.log('   - servicios:', servicios, '(tipo:', typeof servicios, ', array:', Array.isArray(servicios), ')');
+    console.log('   - empleados:', empleados, '(tipo:', typeof empleados, ', array:', Array.isArray(empleados), ')');
+    console.log('   - fecha:', fecha, '(tipo:', typeof fecha, ')');
+    console.log('   - hora_inicio:', hora_inicio, '(tipo:', typeof hora_inicio, ')');
+    console.log('   - hora_fin:', hora_fin, '(tipo:', typeof hora_fin, ')');
+    console.log('   - precio_total:', precio_total, '(tipo:', typeof precio_total, ')');
+    console.log('   - duracion_total:', duracion_total, '(tipo:', typeof duracion_total, ')');
 
     if (!servicios || !Array.isArray(servicios) || servicios.length === 0) {
+        console.log('❌ Error: Servicios inválidos');
         return res.status(400).json({ error: 'Debe seleccionar al menos un servicio.' });
     }
     if (!empleados || !Array.isArray(empleados) || empleados.length === 0) {
+        console.log('❌ Error: Empleados inválidos');
         return res.status(400).json({ error: 'Debe seleccionar al menos un empleado.' });
     }
-    if (!fecha || !hora_inicio || !hora_fin || precio === undefined || duracion_total === undefined) {
+    if (!fecha || !hora_inicio || !hora_fin || precio_total === undefined || precio_total === null || isNaN(precio_total) || duracion_total === undefined || isNaN(duracion_total)) {
+        console.log('❌ Error: Faltan datos obligatorios');
+        console.log('   fecha:', !!fecha, '(valor:', fecha, ')');
+        console.log('   hora_inicio:', !!hora_inicio, '(valor:', hora_inicio, ')');
+        console.log('   hora_fin:', !!hora_fin, '(valor:', hora_fin, ')');
+        console.log('   precio_total:', precio_total !== undefined && precio_total !== null && !isNaN(precio_total), '(valor:', precio_total, ', tipo:', typeof precio_total, ', isNaN:', isNaN(precio_total), ')');
+        console.log('   duracion_total:', duracion_total !== undefined && !isNaN(duracion_total), '(valor:', duracion_total, ', tipo:', typeof duracion_total, ', isNaN:', isNaN(duracion_total), ')');
+        
+        const missingFields = [];
+        if (!fecha) missingFields.push('fecha');
+        if (!hora_inicio) missingFields.push('hora_inicio');
+        if (!hora_fin) missingFields.push('hora_fin');
+        if (precio_total === undefined || precio_total === null || isNaN(precio_total)) missingFields.push('precio_total');
+        if (duracion_total === undefined || isNaN(duracion_total)) missingFields.push('duracion_total');
+        
+        return res.status(400).json({ 
+            error: 'Faltan datos obligatorios.',
+            missingFields: missingFields,
+            receivedData: { fecha, hora_inicio, hora_fin, precio_total, duracion_total }
+        });
+    }
+
+    try {
+        // VALIDAR CONFLICTOS DE HORARIO ANTES DE CREAR
+        console.log('🔍 Validando disponibilidad de empleados...');
+        console.log(`📋 Datos de validación: empleados=${empleados}, fecha=${fecha}, hora=${hora_inicio}-${hora_fin}`);
+        
+        const validacion = await empleadoScheduleManager.verificarDisponibilidadMultiple(
+            empleados, fecha, hora_inicio, hora_fin
+        );
+        
+        console.log('📊 Resultado de validación:', {
+            disponibles: validacion.disponibles.length,
+            conflictos: validacion.conflictos.length
+        });
+
+        if (validacion.conflictos.length > 0) {
+            console.log('❌ Conflictos detectados:', validacion.conflictos);
+            return res.status(400).json({
+                error: 'Conflicto de horarios detectado',
+                mensaje: 'Uno o más empleados ya tienen turnos asignados en este horario',
+                conflictos: validacion.conflictos.map(conflicto => ({
+                    empleado: conflicto.nombre,
+                    mensaje: conflicto.mensaje,
+                    turnosConflictivos: conflicto.turnosConflictivos
+                })),
+                empleadosDisponibles: validacion.disponibles.map(emp => emp.nombre),
+                empleadosConConflicto: validacion.conflictos.map(emp => emp.nombre)
+            });
+        }
+
+        console.log('✅ Todos los empleados están disponibles. Procediendo con la creación...');
+
+        const conn = await db.getConnection();
+        try {
+            await conn.beginTransaction();
+
+            const turnosCreados = [];
+
+            for (const id_empleado of empleados) {
+                // Insertar turno (sin cliente, estado disponible)
+                const [result] = await conn.query(
+                    `INSERT INTO turno (id_cliente, fecha, hora, hora_fin, precio_total, duracion_total, estado)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                    [null, fecha, hora_inicio, hora_fin, precio_total, duracion_total, 'disponible']
+                );
+                const id_turno = result.insertId;
+
+                // Insertar servicios asociados
+                for (const id_servicio of servicios) {
+                    await conn.query(
+                        `INSERT INTO turno_servicio (id_turno, id_servicio) VALUES (?, ?)`,
+                        [id_turno, id_servicio]
+                    );
+                }
+
+                // Insertar empleados asociados (tabla turno_empleado)
+                await conn.query(
+                    `INSERT INTO turno_empleado (id_turno, id_empleado) VALUES (?, ?)`,
+                    [id_turno, id_empleado]
+                );
+
+                turnosCreados.push({
+                    id_turno,
+                    id_empleado,
+                    fecha,
+                    hora_inicio,
+                    hora_fin
+                });
+            }
+
+            await conn.commit();
+            
+            console.log('✅ Turnos creados exitosamente:', turnosCreados);
+            res.status(201).json({ 
+                message: 'Turno(s) creado(s) correctamente sin conflictos de horario.',
+                turnosCreados,
+                empleadosAsignados: validacion.disponibles.length
+            });
+        } catch (err) {
+            await conn.rollback();
+            throw err;
+        } finally {
+            conn.release();
+        }
+
+    } catch (err) {
+        console.error('Error al crear turno:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Obtener todos los turnos disponibles para administradores (DEBE IR ANTES QUE /turnos/:id)
+router.get('/turnos/disponibles-admin', verifyToken, verifyAdmin, async (req, res) => {
+    const db = require('../db');
+    
+    try {
+        console.log('🔍 Obteniendo turnos disponibles para admin...');
+        
+        // Consulta completa con servicios y empleados
+        const [turnos] = await db.query(`
+            SELECT 
+                t.id_turno,
+                t.fecha,
+                t.hora as hora_inicio,
+                t.hora_fin,
+                t.duracion_total,
+                t.precio_total,
+                t.estado,
+                t.fecha_reserva,
+                GROUP_CONCAT(DISTINCT s.nombre SEPARATOR ', ') as servicios,
+                GROUP_CONCAT(DISTINCT CONCAT(e.nombre, ' ', e.apellido) SEPARATOR ', ') as empleados,
+                CASE 
+                    WHEN c.nombre IS NOT NULL THEN CONCAT(c.nombre, ' ', c.apellido)
+                    ELSE 'Sin cliente asignado'
+                END as cliente
+            FROM turno t
+            LEFT JOIN turno_servicio ts ON t.id_turno = ts.id_turno
+            LEFT JOIN servicio s ON ts.id_servicio = s.id_servicio
+            LEFT JOIN turno_empleado te ON t.id_turno = te.id_turno
+            LEFT JOIN empleado e ON te.id_empleado = e.id_empleado
+            LEFT JOIN cliente c ON t.id_cliente = c.id_cliente
+            WHERE t.estado IN ('disponible', 'reservado', 'pendiente')
+            GROUP BY t.id_turno
+            ORDER BY t.fecha ASC, t.hora ASC
+            LIMIT 50
+        `);
+        
+        console.log(`✅ Encontrados ${turnos.length} turnos disponibles`);
+        
+        // Formatear los datos para el frontend
+        const turnosFormateados = turnos.map(turno => {
+            const fecha = turno.fecha.toISOString().split('T')[0]; // Formato YYYY-MM-DD
+            const horaInicio = turno.hora_inicio ? turno.hora_inicio.toString().substring(0, 5) : 'No especificada';
+            const horaFin = turno.hora_fin ? turno.hora_fin.toString().substring(0, 5) : '';
+            
+            return {
+                ...turno,
+                fecha: fecha,
+                hora_inicio: horaInicio,
+                hora_fin: horaFin,
+                servicios: turno.servicios || 'Sin servicios asignados',
+                empleados: turno.empleados || 'Sin empleados asignados',
+                cliente: turno.cliente || 'Sin cliente asignado'
+            };
+        });
+        
+        res.json(turnosFormateados);
+        
+    } catch (error) {
+        console.error('❌ Error al obtener turnos disponibles:', error);
+        res.status(500).json({ error: 'Error al obtener turnos disponibles' });
+    }
+});
+
+// Obtener un turno específico por ID para edición
+router.get('/turnos/:id', verifyToken, verifyAdmin, async (req, res) => {
+    const { id } = req.params;
+    const db = require('../db');
+    
+    try {
+        console.log('🔍 Obteniendo turno ID:', id);
+        
+        const [turno] = await db.query(`
+            SELECT 
+                t.id_turno,
+                t.fecha,
+                t.hora as hora_inicio,
+                t.hora_fin,
+                t.duracion_total,
+                t.precio_total,
+                t.estado,
+                GROUP_CONCAT(DISTINCT s.id_servicio) as servicios_ids,
+                GROUP_CONCAT(DISTINCT s.nombre) as servicios_nombres,
+                GROUP_CONCAT(DISTINCT e.id_empleado) as empleados_ids,
+                GROUP_CONCAT(DISTINCT CONCAT(e.nombre, ' ', e.apellido)) as empleados_nombres
+            FROM turno t
+            LEFT JOIN turno_servicio ts ON t.id_turno = ts.id_turno
+            LEFT JOIN servicio s ON ts.id_servicio = s.id_servicio
+            LEFT JOIN turno_empleado te ON t.id_turno = te.id_turno
+            LEFT JOIN empleado e ON te.id_empleado = e.id_empleado
+            WHERE t.id_turno = ?
+            GROUP BY t.id_turno
+        `, [id]);
+        
+        if (!turno || turno.length === 0) {
+            return res.status(404).json({ error: 'Turno no encontrado' });
+        }
+        
+        const turnoData = {
+            ...turno[0],
+            servicios: turno[0].servicios_ids ? turno[0].servicios_ids.split(',').map(Number) : [],
+            empleados: turno[0].empleados_ids ? turno[0].empleados_ids.split(',').map(Number) : []
+        };
+        
+        console.log('✅ Turno encontrado:', turnoData);
+        res.json(turnoData);
+        
+    } catch (error) {
+        console.error('❌ Error al obtener turno:', error);
+        res.status(500).json({ error: 'Error al obtener el turno' });
+    }
+});
+
+// Actualizar un turno existente
+router.put('/turnos/:id', verifyToken, verifyAdmin, async (req, res) => {
+    console.log('📝 PUT /api/admin/turnos/:id BODY:', req.body);
+    console.log('🔒 Usuario autenticado:', req.user?.role);
+    
+    const { id } = req.params;
+    const { servicios, empleados, fecha, hora_inicio, hora_fin, precio_total, duracion_total } = req.body;
+    
+    console.log('📋 Datos recibidos para actualización:');
+    console.log('   - turno_id:', id);
+    console.log('   - servicios:', servicios, '(tipo:', typeof servicios, ', array:', Array.isArray(servicios), ')');
+    console.log('   - empleados:', empleados, '(tipo:', typeof empleados, ', array:', Array.isArray(empleados), ')');
+    console.log('   - fecha:', fecha, '(tipo:', typeof fecha, ')');
+    console.log('   - hora_inicio:', hora_inicio, '(tipo:', typeof hora_inicio, ')');
+    console.log('   - hora_fin:', hora_fin, '(tipo:', typeof hora_fin, ')');
+    console.log('   - precio_total:', precio_total, '(tipo:', typeof precio_total, ')');
+    console.log('   - duracion_total:', duracion_total, '(tipo:', typeof duracion_total, ')');
+
+    // Validaciones
+    if (!servicios || !Array.isArray(servicios) || servicios.length === 0) {
+        console.log('❌ Error: Servicios inválidos');
+        return res.status(400).json({ error: 'Debe seleccionar al menos un servicio.' });
+    }
+    if (!empleados || !Array.isArray(empleados) || empleados.length === 0) {
+        console.log('❌ Error: Empleados inválidos');
+        return res.status(400).json({ error: 'Debe seleccionar al menos un empleado.' });
+    }
+    if (!fecha || !hora_inicio || !hora_fin || precio_total === undefined || precio_total === null || isNaN(precio_total) || duracion_total === undefined || isNaN(duracion_total)) {
+        console.log('❌ Error: Faltan datos obligatorios para actualización');
         return res.status(400).json({ error: 'Faltan datos obligatorios.' });
     }
 
-    const conn = await db.getConnection();
     try {
-        await conn.beginTransaction();
-
-        for (const id_empleado of empleados) {
-            // Insertar turno (sin cliente, estado disponible)
-            const [result] = await conn.query(
-                `INSERT INTO turno (id_cliente, fecha, hora, hora_fin, precio, duracion_total, estado)
-                VALUES (?, ?, ?, ?, ?, ?, ?)`,
-                [null, fecha, hora_inicio, hora_fin, precio, duracion_total, 'disponible']
-            );
-            const id_turno = result.insertId;
-
-            // Insertar servicios asociados
-            for (const id_servicio of servicios) {
-                await conn.query(
-                    `INSERT INTO turno_servicio (id_turno, id_servicio) VALUES (?, ?)`,
-                    [id_turno, id_servicio]
-                );
-            }
-
-            // Insertar empleados asociados (tabla turno_empleado)
-            await conn.query(
-                `INSERT INTO turno_empleado (id_turno, id_empleado) VALUES (?, ?)`,
-                [id_turno, id_empleado]
-            );
+        const db = require('../db');
+        
+        // Verificar que el turno existe
+        const [turnoExistente] = await db.query('SELECT * FROM turno WHERE id_turno = ?', [id]);
+        if (turnoExistente.length === 0) {
+            return res.status(404).json({ error: 'Turno no encontrado' });
         }
-
-        await conn.commit();
-        res.status(201).json({ message: 'Turno(s) creado(s) correctamente.' });
-    } catch (err) {
-        await conn.rollback();
-        console.error('Error al crear turno:', err);
-        res.status(500).json({ error: err.message });
-    } finally {
-        conn.release();
+        
+        console.log('🔄 Actualizando turno...');
+        
+        // Actualizar datos básicos del turno
+        await db.query(`
+            UPDATE turno 
+            SET fecha = ?, hora = ?, hora_fin = ?, duracion_total = ?, precio_total = ?, fecha_modificacion = NOW()
+            WHERE id_turno = ?
+        `, [fecha, hora_inicio, hora_fin, duracion_total, precio_total, id]);
+        
+        // Actualizar servicios del turno
+        await db.query('DELETE FROM turno_servicio WHERE id_turno = ?', [id]);
+        for (const servicioId of servicios) {
+            await db.query('INSERT INTO turno_servicio (id_turno, id_servicio) VALUES (?, ?)', [id, servicioId]);
+        }
+        
+        // Actualizar empleados del turno
+        await db.query('DELETE FROM turno_empleado WHERE id_turno = ?', [id]);
+        for (const empleadoId of empleados) {
+            await db.query('INSERT INTO turno_empleado (id_turno, id_empleado) VALUES (?, ?)', [id, empleadoId]);
+        }
+        
+        console.log('✅ Turno actualizado exitosamente');
+        res.json({ 
+            success: true, 
+            message: 'Turno actualizado exitosamente',
+            turno_id: id
+        });
+        
+    } catch (error) {
+        console.error('❌ Error al actualizar turno:', error);
+        res.status(500).json({ error: 'Error al actualizar el turno' });
     }
 });
+
+// Eliminar un turno existente
+router.delete('/turnos/:id', verifyToken, verifyAdmin, async (req, res) => {
+    console.log('🗑️ DELETE /api/admin/turnos/:id');
+    console.log('🔒 Usuario autenticado:', req.user?.role);
+    
+    const { id } = req.params;
+    const db = require('../db');
+    
+    try {
+        console.log('🗑️ Eliminando turno ID:', id);
+        
+        // Verificar que el turno existe
+        const [turnoExistente] = await db.query('SELECT * FROM turno WHERE id_turno = ?', [id]);
+        if (turnoExistente.length === 0) {
+            return res.status(404).json({ error: 'Turno no encontrado' });
+        }
+        
+        console.log('🔄 Eliminando relaciones del turno...');
+        
+        // Eliminar las relaciones del turno primero (para evitar errores de foreign key)
+        await db.query('DELETE FROM turno_servicio WHERE id_turno = ?', [id]);
+        await db.query('DELETE FROM turno_empleado WHERE id_turno = ?', [id]);
+        await db.query('DELETE FROM turno_combo WHERE id_turno = ?', [id]);
+        
+        // Eliminar el turno
+        await db.query('DELETE FROM turno WHERE id_turno = ?', [id]);
+        
+        console.log('✅ Turno eliminado exitosamente');
+        res.json({ 
+            success: true, 
+            message: `Turno ID ${id} eliminado exitosamente`
+        });
+        
+    } catch (error) {
+        console.error('❌ Error al eliminar turno:', error);
+        res.status(500).json({ error: 'Error al eliminar el turno' });
+    }
+});
+
+// ==================== GESTIÓN DE EMPLEADOS ====================
 
 module.exports = router;
