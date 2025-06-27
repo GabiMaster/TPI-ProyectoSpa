@@ -56,6 +56,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             <th>Duración</th>
                             <th>Precio</th>
                             <th>Estado</th>
+                            <th>Fecha Reserva</th>
                             <th>Acciones</th>
                         </tr>
                     </thead>
@@ -63,19 +64,38 @@ document.addEventListener('DOMContentLoaded', async () => {
                 `;
                 turnos.forEach(turno => {
                     const fecha = new Date(turno.fecha);
-                    const fechaFormateada = `${fecha.getFullYear()}/${String(fecha.getMonth() + 1).padStart(2, '0')}/${String(fecha.getDate()).padStart(2, '0')}`;
-                    const esFuturo = fecha > new Date() || (fecha.toDateString() === new Date().toDateString() && turno.hora > new Date().toLocaleTimeString('it-IT', { hour12: false }).slice(0,5));
+                    const fechaFormateada = fecha.toLocaleDateString('es-ES');
+                    
+                    // Calcular si han pasado más de 48 horas desde ahora hasta el turno
+                    const fechaHoraTurno = new Date(`${turno.fecha}T${turno.hora_inicio}`);
+                    const ahora = new Date();
+                    const diffHoras = (fechaHoraTurno - ahora) / (1000 * 60 * 60);
+                    const puedeCancel = turno.estado === 'reservado' && diffHoras > 48;
+                    
+                    // Mostrar estado en español
+                    const estadoTexto = {
+                        'disponible': 'Disponible',
+                        'reservado': 'Reservado',
+                        'atendido': 'Atendido',
+                        'cancelado': 'Cancelado',
+                        'expirado': 'Expirado',
+                        'no_realizado': 'No Realizado'
+                    };
+
                     html += `<tr>
                         <td>${fechaFormateada}</td>
-                        <td>${turno.hora.slice(0,5)}</td>
-                        <td>${turno.servicios}</td>
-                        <td>${turno.duracion_total} min</td>
-                        <td>$${Number(turno.precio_total).toFixed(2)}</td>
-                        <td>${turno.estado}</td>
+                        <td>${turno.hora_inicio} - ${turno.hora_fin}</td>
+                        <td>${turno.servicios || 'N/A'}</td>
+                        <td>${turno.duracion_total || 0} min</td>
+                        <td>$${Number(turno.precio_total || 0).toFixed(2)}</td>
+                        <td><span class="estado-badge estado-${turno.estado}">${estadoTexto[turno.estado] || turno.estado}</span></td>
+                        <td>${turno.fecha_reserva ? new Date(turno.fecha_reserva).toLocaleDateString('es-ES') : 'N/A'}</td>
                         <td>${
-                            (turno.estado !== 'cancelado' && esFuturo)
-                            ? `<button class="cancelar-turno-btn" data-id="${turno.id_turno}">Cancelar</button>`
-                            : ''
+                            puedeCancel
+                            ? `<button class="cancelar-turno-btn" data-id="${turno.id_turno}" data-fecha="${turno.fecha}" data-hora="${turno.hora_inicio}">Cancelar</button>`
+                            : (turno.estado === 'reservado' && diffHoras <= 48 && diffHoras > 0 
+                                ? '<span class="no-cancel-text">No cancelable (menos de 48h)</span>'
+                                : '')
                         }</td>
                     </tr>`;
                 });
@@ -86,34 +106,41 @@ document.addEventListener('DOMContentLoaded', async () => {
                 document.querySelectorAll('.cancelar-turno-btn').forEach(btn => {
                     btn.addEventListener('click', async (e) => {
                         const idTurno = btn.dataset.id;
+                        const fecha = btn.dataset.fecha;
+                        const hora = btn.dataset.hora;
+                        
                         if (confirm('¿Seguro que deseas cancelar este turno?')) {
-                            // Buscar el turno correspondiente
-                            const turno = turnos.find(t => t.id_turno == idTurno);
-                            // Validación de 24 horas
-                            const fechaHoraTurno = new Date(`${turno.fecha}T${turno.hora}`);
+                            // Doble validación de 48 horas
+                            const fechaHoraTurno = new Date(`${fecha}T${hora}`);
                             const ahora = new Date();
                             const diffHoras = (fechaHoraTurno - ahora) / (1000 * 60 * 60);
-                            if (diffHoras < 24) {
-                                alert("No puedes cancelar el turno con menos de 24 horas de anticipación. Se cobrará el turno.");
+                            
+                            if (diffHoras <= 48) {
+                                alert("No puedes cancelar el turno con menos de 48 horas de anticipación.");
                                 return;
                             }
+                            
                             const token = localStorage.getItem('token');
                             const response = await fetch(`https://9plm87v2-3000.brs.devtunnels.ms/api/turnos/cancelar/${idTurno}`, {
-                                method: 'PUT',
+                                method: 'PATCH',
                                 headers: { 'Authorization': `Bearer ${token}` }
                             });
+                            
                             if (response.ok) {
-                                alert('Turno cancelado correctamente');
+                                const result = await response.json();
+                                alert(result.message || 'Turno cancelado correctamente');
                                 cargarHistorialReservas();
                             } else {
-                                alert('No se pudo cancelar el turno');
+                                const error = await response.json();
+                                alert(error.error || 'No se pudo cancelar el turno');
                             }
                         }
                     });
                 });
                 
             } catch (error) {
-                historialDiv.innerHTML = `<p>Error al cargar el historial</p>`;
+                historialDiv.innerHTML = `<p style="color:red">Error al cargar el historial: ${error.message}</p>`;
+                console.error('Error:', error);
             }
         }
 

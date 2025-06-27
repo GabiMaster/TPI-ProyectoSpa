@@ -169,6 +169,7 @@
                 <button id="add-turno" class="action-button">➕ Crear Turno</button>
                 <button id="edit-turno" class="action-button">✏️ Modificar Turno</button>
                 <button id="delete-turno" class="action-button">🗑️ Eliminar Turno</button>
+                <button id="view-available-turnos" class="action-button">📋 Ver Turnos Disponibles</button>
             </div>
         </div>
 
@@ -339,6 +340,40 @@
 
         <h2>Turnos Pendientes</h2>
         <table id="tabla-turnos-pendientes"></table>
+
+        <!-- Lista de turnos disponibles -->
+        <div id="available-turnos-container" class="admin-section hidden">
+            <h2>Turnos Disponibles</h2>
+            <div id="available-turnos-list">
+                <p>Cargando turnos disponibles...</p>
+            </div>
+            <button id="close-available-turnos" class="action-button">Cerrar</button>
+        </div>
+
+        <!-- Nueva sección: Historial de Turnos -->
+        <div class="admin-section">
+            <h2>Historial de Turnos</h2>
+            <div class="button-group">
+                <button id="view-historial-turnos" class="action-button">📊 Ver Historial Completo</button>
+            </div>
+        </div>
+
+        <!-- Contenedor del historial de turnos -->
+        <div id="historial-turnos-container" class="admin-section hidden">
+            <h2>Historial de Turnos</h2>
+            <div class="filter-buttons">
+                <button id="filter-confirmado" class="filter-btn active">Confirmados</button>
+                <button id="filter-completado" class="filter-btn">Completados</button>
+                <button id="filter-cancelado" class="filter-btn">Cancelados</button>
+                <button id="filter-expirado" class="filter-btn">Expirados</button>
+                <button id="filter-no-realizado" class="filter-btn">No Realizados</button>
+                <button id="filter-todos" class="filter-btn">Todos</button>
+            </div>
+            <div id="historial-turnos-list">
+                <p>Cargando historial...</p>
+            </div>
+            <button id="close-historial-turnos" class="action-button">Cerrar</button>
+        </div>
     </section>
 
     <script src="admin.js"></script>

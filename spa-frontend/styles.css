@@ -1169,303 +1169,189 @@ button:hover {
     color: #2d6a4f;
 }
 
-/* ============ MEDIA QUERIES ============ */
-@media (max-width: 1237px) {
-    .navbar {
-        flex-direction: column;
-        gap: 10px;
-    }
-
-    .hero-section {
-        flex-direction: column;
-        align-items: center;
-    }
-
-    .hero-section img {
-        margin-right: 0;
-        max-width: 100%;
-    }
-
-    .hero-description {
-        max-width: 100%;
-        text-align: center;
-    }
-
-    .services {
-        flex-direction: column;
-        align-items: center;
-    }
-
-    .turnos-container {
-        flex-direction: column;
-        text-align: center;
-        padding: 20px;
-    }
-
-    .turnos-content {
-        flex-direction: column;
-        align-items: center;
-    }
-
-    .turnos-divider {
-        width: 100%;
-        height: 2px;
-        margin: 20px 0;
-    }
-    
-    .turnos-left, .turnos-right {
-        flex: none;
-        max-width: 100%;
-    }
-    
-    .turnos-right {
-        text-align: center;
-        margin-top: 20px;
-    }
-
-    .contact-content {
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-    }
-
-    .contact-right {
-        flex-direction: column;
-        align-items: center;
-    }
-
-    .contact-title {
-        text-align: center;
-    }
-
-    .contact-info {
-        text-align: center;
-    }
-
-    .form-container {
-        max-width: 100%;
-    }
+/* ==================== ADMIN TURNOS STYLES ==================== */
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
-@media (max-width: 900px) {
-    .navbar {
-        flex-direction: column;
-        padding: 10px 20px;
-        gap: 10px;
-    }
-    
-    .navbar img {
-        width: 60px;
-    }
-    
-    .navbar .nav-links {
-        flex-direction: column;
-        gap: 10px;
-        width: 100%;
-        align-items: center;
-    }
-    
-    .navbar .nav-links a {
-        width: 100%;
-        text-align: center;
-        padding: 10px 0;
-    }
+.admin-table th,
+.admin-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #e0e0e0;
+}
 
-    .hero-section {
-        flex-direction: column;
-        align-items: center;
-        justify-content: flex-start;
-        height: auto;
-        min-height: 80vh;
-        margin-top: 20px;
-        padding: 20px 0 0 0;
-    }
-    
-    .image-overlay {
-        flex-direction: column;
-        align-items: center;
-        width: 100% !important;
-        max-width: 100vw !important;
-        margin: 0 auto;
-        padding: 0;
-    }
-    
-    .image-overlay img {
-        max-width: 90vw;
-        width: 100%;
-        height: auto;
-        margin-bottom: 18px;
-        border-radius: 16px;
-    }
-    
-    .hero-content {
-        width: 95vw !important;
-        max-width: 98vw !important;
-        margin: 0 auto;
-        border-radius: 12px;
-        position: static !important;
-        margin-top: 0;
-        height: auto !important;
-        padding: 18px 10px;
-        background: rgba(209, 77, 114, 0.9); /* Rosado fuerte con transparencia */
-        box-shadow: 0 2px 8px rgba(0,0,0,0.07);
-    }
-    
-    .hero-title {
-        font-size: 1.5rem !important;
-        text-align: center;
-    }
-    
-    .hero-description {
-        font-size: 1rem !important;
-        text-align: center;
-        max-width: 100% !important;
-    }
+.admin-table th {
+    background: #f8f9fa;
+    font-weight: 600;
+    color: #495057;
+}
 
-    .services {
-        grid-template-columns: 1fr;
-        padding: 10px;
-        gap: 15px;
-    }
-    
-    .service-box {
-        padding: 15px;
-    }
+.admin-table tr:hover {
+    background: #f8f9fa;
+}
 
-    .turnos-main-container,
-    .contact-main-container {
-        flex-direction: column;
-        align-items: center;
-        gap: 30px;
-        padding: 10px;
-        max-width: 100vw;
-    }
+/* Filter buttons */
+.filter-buttons {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
 
-    .contact-container {
-        flex-direction: column;
-        padding: 20px 0 10px 0;
-    }
-    
-    .contact-content {
-        flex-direction: column;
-        gap: 20px;
-        align-items: center;
-        text-align: center;
-    }
-    
-    .contact-box {
-        width: 100%;
-        justify-content: center;
-        align-items: center;
-    }
-    
-    .contact-left img {
-        width: 180px;
-    }
-    
-    .form-container {
-        max-width: 100%;
-        padding: 10px;
-    }
-    
-    .social-icons img {
-        width: 30px;
-        height: 30px;
-    }
+.filter-btn {
+    padding: 8px 16px;
+    border: 2px solid #d4a574;
+    background: white;
+    color: #d4a574;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 14px;
+}
 
-    /* Login/Register responsive */
-    .profile-container {
-        width: 90%;
-        padding: 30px 20px;
-        margin: 50px auto;
+.filter-btn:hover {
+    background: #f0e6d6;
+}
+
+.filter-btn.active {
+    background: #d4a574;
+    color: white;
+}
+
+/* Estado badges */
+.estado-badge {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: capitalize;
+}
+
+.estado-disponible {
+    background: #e8f5e8;
+    color: #28a745;
+}
+
+.estado-reservado {
+    background: #e3f2fd;
+    color: #1976d2;
+}
+
+.estado-atendido {
+    background: #e8f5e8;
+    color: #28a745;
+}
+
+.estado-cancelado {
+    background: #ffebee;
+    color: #dc3545;
+}
+
+.estado-expirado {
+    background: #fff3e0;
+    color: #ff9800;
+}
+
+.estado-no_realizado {
+    background: #fce4ec;
+    color: #e91e63;
+}
+
+/* Action buttons */
+.btn-confirmar {
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-right: 5px;
+    font-size: 12px;
+}
+
+.btn-confirmar:hover {
+    background: #218838;
+}
+
+.btn-cancelar {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.btn-cancelar:hover {
+    background: #c82333;
+}
+
+.cancelar-turno-btn {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.cancelar-turno-btn:hover {
+    background: #c82333;
+}
+
+.no-cancel-text {
+    font-size: 12px;
+    color: #6c757d;
+    font-style: italic;
+}
+
+/* Estilos responsivos mejorados */
+@media (max-width: 1024px) {
+    .filter-buttons {
+        gap: 5px;
     }
     
-    .profile-title {
-        font-size: 20px;
+    .filter-btn {
+        font-size: 12px;
+        padding: 6px 10px;
     }
     
-    .profile-container .form-group input {
-        padding: 10px 12px;
+    .admin-table th,
+    .admin-table td {
+        font-size: 12px;
+        padding: 8px 6px;
+    }
+    
+    .estado-badge {
+        font-size: 10px;
+        padding: 2px 8px;
     }
 }
 
 @media (max-width: 600px) {
-    .hero-section {
-        min-height: 60vh;
-        padding: 10px 0 0 0;
+    .admin-table {
+        font-size: 10px;
     }
     
-    .image-overlay img {
-        max-width: 98vw;
-        border-radius: 10px;
+    .btn-confirmar,
+    .btn-cancelar,
+    .cancelar-turno-btn {
+        padding: 4px 8px;
+        font-size: 10px;
     }
     
-    .hero-content {
-        padding: 12px 4vw;
-    }
-    
-    .hero-title {
-        font-size: 1.1rem !important;
-    }
-
-    .turnos-form-group input[type="date"],
-    .turnos-form-group input[type="time"],
-    .form-group input,
-    .contact-form-group input,
-    .contact-form-group textarea {
-        width: 100% !important;
-        font-size: 1rem;
-    }
-    
-    .form-button,
-    .turnos-reserve-button,
-    .contact-reserve-button {
-        font-size: 1rem;
-        padding: 10px;
-    }
-
-    .home-title,
-    .turnos-page-title,
-    .contact-page-title,
-    .services-title,
-    .admin-title {
-        font-size: 2rem !important;
-        margin: 24px 0 !important;
-    }
-    
-    .hero-title,
-    .service-box h3,
-    .contact-title {
-        font-size: 1.2rem !important;
-    }
-    
-    .hero-description,
-    .service-box p,
-    .turnos-description {
-        font-size: 1rem !important;
-    }
-
-    body {
-        font-size: 0.98rem;
-    }
-    
-    .navbar {
+    .filter-buttons {
+        justify-content: flex-start;
+        overflow-x: auto;
         padding: 5px 0;
-    }
-    
-    .footer {
-        padding: 10px 0;
-    }
-    
-    .footer-content img {
-        width: 50px;
-    }
-
-    @media (max-width: 600px) {
-        .historial-table {
-            display: block;
-            overflow-x: auto;
-            width: 100%;
-        }
     }
 }

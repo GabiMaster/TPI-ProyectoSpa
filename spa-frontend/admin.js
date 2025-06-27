@@ -583,7 +583,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // Configurar el formulario de empleados
-    empleadoForm.addEventListener("submit", async (e) => {
+    employeeForm.addEventListener("submit", async (e) => {
         e.preventDefault();
         const submitButton = e.target.querySelector('button[type="submit"]');
         submitButton.disabled = true;
@@ -599,8 +599,8 @@ document.addEventListener("DOMContentLoaded", () => {
             });
             const result = await handleFetchError(response);
             showAlert(result.message || "Empleado creado exitosamente");
-            toggleVisibility(empleadoFormContainer, false);
-            viewEmpleadosBtn.click();
+            toggleVisibility(employeeFormContainer, false);
+            viewEmployeesBtn.click();
         } catch (error) {
             showAlert("Error: " + error.message, true);
             console.error(error);
@@ -732,105 +732,259 @@ document.addEventListener("DOMContentLoaded", () => {
         asignarServiciosContainer.classList.add("hidden");
     });
 
-    // ==================== TURNOS PENDIENTES Y ASIGNACIÓN ====================
-    function renderTurnosPendientes(turnos) {
-        const tabla = document.getElementById("tabla-turnos-pendientes");
-        if (!tabla) return;
-        tabla.innerHTML = `
-            <thead>
-                <tr>
-                    <th>ID Turno</th>
-                    <th>Servicio</th>
-                    <th>Fecha</th>
-                    <th>Hora</th>
-                    <th>Cliente</th>
-                    <th>Asignar Empleado</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${turnos.map(turno => `
-                    <tr>
-                        <td>${turno.id_turno}</td>
-                        <td>${turno.servicio}</td>
-                        <td>${turno.fecha}</td>
-                        <td>${turno.hora}</td>
-                        <td>${turno.cliente}</td>
-                        <td id="asignar-empleado-div-${turno.id_turno}">
-                            <button onclick="mostrarEmpleadosParaTurno(${turno.id_turno}, ${turno.id_servicio})">Asignar empleado</button>
-                        </td>
-                    </tr>
-                `).join("")}
-            </tbody>
-        `;
-    }
+    // ==================== GESTIÓN DE TURNOS DISPONIBLES ====================
+    const availableTurnosContainer = document.getElementById("available-turnos-container");
+    const availableTurnosList = document.getElementById("available-turnos-list");
+    const viewAvailableTurnosBtn = document.getElementById("view-available-turnos");
+    const closeAvailableTurnosBtn = document.getElementById("close-available-turnos");
 
-    async function cargarTurnosPendientes() {
-        const response = await fetch(`${API_ADMIN_BASE_URL}/turnos-pendientes`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const turnos = await response.json();
-        renderTurnosPendientes(turnos);
-    }
-
-    cargarTurnosPendientes();
-
-    window.mostrarEmpleadosParaTurno = async function(idTurno, idServicio) {
-        const div = document.getElementById(`asignar-empleado-div-${idTurno}`);
-        if (!div) {
-            alert("No se encontró el contenedor para asignar empleado.");
-            return;
+    viewAvailableTurnosBtn.addEventListener("click", async () => {
+        const isVisible = !availableTurnosContainer.classList.contains("hidden");
+        if (isVisible) {
+            toggleVisibility(availableTurnosContainer, false);
+        } else {
+            await cargarTurnosDisponibles();
+            toggleVisibility(availableTurnosContainer, true);
         }
-        div.innerHTML = "Cargando...";
+    });
+
+    closeAvailableTurnosBtn.addEventListener("click", () => {
+        toggleVisibility(availableTurnosContainer, false);
+    });
+
+    async function cargarTurnosDisponibles() {
         try {
-            const response = await fetch(`${API_ADMIN_BASE_URL}/empleados-por-servicio/${idServicio}`, {
+            availableTurnosList.innerHTML = "<p>Cargando turnos disponibles...</p>";
+            const response = await fetch(`${API_BASE_URL}/turnos/disponibles-admin`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            const empleados = await response.json();
-            if (!Array.isArray(empleados) || empleados.length === 0) {
-                div.innerHTML = "<span style='color:red'>No hay empleados habilitados para este servicio.</span>";
-                return;
-            }
-            let selectHtml = `<select id="select-empleado-${idTurno}">`;
-            empleados.forEach(e => {
-                selectHtml += `<option value="${e.id_empleado}">${e.nombre} ${e.apellido} (${e.puesto})</option>`;
-            });
-            selectHtml += `</select>
-            <button onclick="asignarEmpleado(${idTurno})">Asignar</button>
-            <button onclick="cancelarAsignacion(${idTurno}, ${idServicio})">Cancelar</button>`;
-            div.innerHTML = selectHtml;
+            const turnos = await handleFetchError(response);
+            renderTurnosDisponibles(turnos);
         } catch (error) {
-            div.innerHTML = "<span style='color:red'>Error al cargar empleados.</span>";
+            availableTurnosList.innerHTML = `<p style="color:red">Error al cargar turnos: ${error.message}</p>`;
+            console.error(error);
         }
-    };
+    }
 
-    window.asignarEmpleado = async function(idTurno) {
-        const select = document.getElementById(`select-empleado-${idTurno}`);
-        const idEmpleado = select.value;
-        try {
-            const response = await fetch(`${API_ADMIN_BASE_URL}/asignar-turno/${idTurno}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ idEmpleado })
-            });
-            const data = await response.json();
-            if (response.ok) {
-                alert('Empleado asignado correctamente');
-                location.reload();
+    function renderTurnosDisponibles(turnos) {
+        if (!turnos || turnos.length === 0) {
+            availableTurnosList.innerHTML = "<p>No hay turnos disponibles.</p>";
+            return;
+        }
+
+        const estadoTexto = {
+            'disponible': 'Disponible',
+            'reservado': 'Reservado',
+            'atendido': 'Atendido',
+            'cancelado': 'Cancelado',
+            'expirado': 'Expirado',
+            'no_realizado': 'No Realizado'
+        };
+
+        const tabla = `
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Fecha</th>
+                        <th>Hora Inicio</th>
+                        <th>Hora Fin</th>
+                        <th>Servicios</th>
+                        <th>Empleados</th>
+                        <th>Precio</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${turnos.map(turno => `
+                        <tr>
+                            <td>${turno.id_turno}</td>
+                            <td>${new Date(turno.fecha).toLocaleDateString('es-ES')}</td>
+                            <td>${turno.hora}</td>
+                            <td>${turno.hora_fin || 'N/A'}</td>
+                            <td>${turno.servicios || 'N/A'}</td>
+                            <td>${turno.empleados || 'N/A'}</td>
+                            <td>$${Number(turno.precio_total || 0).toFixed(2)}</td>
+                            <td><span class="estado-badge estado-${turno.estado}">${estadoTexto[turno.estado] || turno.estado}</span></td>
+                        </tr>
+                    `).join("")}
+                </tbody>
+            </table>
+        `;
+        availableTurnosList.innerHTML = tabla;
+    }
+
+    // ==================== HISTORIAL DE TURNOS ====================
+    const historialTurnosContainer = document.getElementById("historial-turnos-container");
+    const historialTurnosList = document.getElementById("historial-turnos-list");
+    const viewHistorialTurnosBtn = document.getElementById("view-historial-turnos");
+    const closeHistorialTurnosBtn = document.getElementById("close-historial-turnos");
+
+    let currentFilter = 'confirmado';
+    let historialData = [];
+
+    viewHistorialTurnosBtn.addEventListener("click", async () => {
+        const isVisible = !historialTurnosContainer.classList.contains("hidden");
+        if (isVisible) {
+            toggleVisibility(historialTurnosContainer, false);
+        } else {
+            await cargarHistorialTurnos();
+            toggleVisibility(historialTurnosContainer, true);
+        }
+    });
+
+    closeHistorialTurnosBtn.addEventListener("click", () => {
+        toggleVisibility(historialTurnosContainer, false);
+    });
+
+    // Event listeners para los filtros
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            // Remover clase active de todos los botones
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            // Agregar clase active al botón clickeado
+            e.target.classList.add('active');
+            
+            // Actualizar filtro y renderizar
+            const filterId = e.target.id.replace('filter-', '');
+            if (filterId === 'todos') {
+                currentFilter = null;
+            } else if (filterId === 'no-realizado') {
+                currentFilter = 'no_realizado';
+            } else if (filterId === 'expirado') {
+                currentFilter = 'expirado';
+            } else if (filterId === 'confirmado') {
+                currentFilter = 'confirmado';
+            } else if (filterId === 'completado') {
+                currentFilter = 'completado';
+            } else if (filterId === 'cancelado') {
+                currentFilter = 'cancelado';
             } else {
-                alert(data.error || 'Error al asignar empleado');
+                currentFilter = filterId;
             }
-        } catch (error) {
-            alert("Error al asignar empleado");
-        }
-    };
+            renderHistorialTurnos();
+        });
+    });
 
-    window.cancelarAsignacion = function(idTurno, idServicio) {
-        const div = document.getElementById(`asignar-empleado-div-${idTurno}`);
-        div.innerHTML = `<button onclick="mostrarEmpleadosParaTurno(${idTurno}, ${idServicio})">Asignar empleado</button>`;
-    };
+    async function cargarHistorialTurnos() {
+        try {
+            historialTurnosList.innerHTML = "<p>Cargando historial...</p>";
+            const response = await fetch(`${API_BASE_URL}/turnos/historial-completo`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            historialData = await handleFetchError(response);
+            renderHistorialTurnos();
+        } catch (error) {
+            historialTurnosList.innerHTML = `<p style="color:red">Error al cargar historial: ${error.message}</p>`;
+            console.error(error);
+        }
+    }
+
+    function renderHistorialTurnos() {
+        let turnosFiltrados = historialData;
+        
+        if (currentFilter) {
+            turnosFiltrados = historialData.filter(turno => turno.estado === currentFilter);
+        }
+
+        if (!turnosFiltrados || turnosFiltrados.length === 0) {
+            historialTurnosList.innerHTML = `<p>No hay turnos ${currentFilter ? 'en estado ' + currentFilter : 'en el historial'}.</p>`;
+            return;
+        }
+
+        // Traducir estados al español
+        const estadoTexto = {
+            'disponible': 'Disponible',
+            'pendiente': 'Pendiente',
+            'confirmado': 'Confirmado',
+            'completado': 'Completado',
+            'cancelado': 'Cancelado',
+            'expirado': 'Expirado',
+            'no_realizado': 'No Realizado'
+        };
+
+        const tabla = `
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Cliente</th>
+                        <th>Fecha</th>
+                        <th>Hora</th>
+                        <th>Servicios</th>
+                        <th>Precio</th>
+                        <th>Estado</th>
+                        <th>Fecha Reserva</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${turnosFiltrados.map(turno => `
+                        <tr>
+                            <td>${turno.id_turno}</td>
+                            <td>${turno.cliente_nombre ? `${turno.cliente_nombre} ${turno.cliente_apellido || ''}` : 'N/A'}</td>
+                            <td>${new Date(turno.fecha).toLocaleDateString('es-ES')}</td>
+                            <td>${turno.hora_inicio} - ${turno.hora_fin}</td>
+                            <td>${turno.servicios || 'N/A'}</td>
+                            <td>$${Number(turno.precio_total || 0).toFixed(2)}</td>
+                            <td><span class="estado-badge estado-${turno.estado}">${estadoTexto[turno.estado] || turno.estado}</span></td>
+                            <td>${turno.fecha_reserva ? new Date(turno.fecha_reserva).toLocaleDateString('es-ES') : 'N/A'}</td>
+                            <td>
+                                ${turno.estado === 'reservado' ? `
+                                    <button class="btn-confirmar" data-id="${turno.id_turno}">Confirmar</button>
+                                    <button class="btn-cancelar" data-id="${turno.id_turno}">Cancelar</button>
+                                ` : ''}
+                            </td>
+                        </tr>
+                    `).join("")}
+                </tbody>
+            </table>
+        `;
+        historialTurnosList.innerHTML = tabla;
+
+        // Agregar event listeners para los botones de acción
+        document.querySelectorAll('.btn-confirmar').forEach(btn => {
+            btn.addEventListener('click', (e) => confirmarTurno(e.target.dataset.id));
+        });
+
+        document.querySelectorAll('.btn-cancelar').forEach(btn => {
+            btn.addEventListener('click', (e) => cancelarTurno(e.target.dataset.id));
+        });
+    }
+
+    async function confirmarTurno(idTurno) {
+        if (!confirm('¿Confirmar que el cliente asistió al turno?')) return;
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/turnos/confirmar/${idTurno}`, {
+                method: 'PATCH',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const result = await handleFetchError(response);
+            showAlert(result.message || 'Turno confirmado exitosamente');
+            await cargarHistorialTurnos(); // Recargar historial
+        } catch (error) {
+            showAlert('Error al confirmar turno: ' + error.message, true);
+            console.error(error);
+        }
+    }
+
+    async function cancelarTurno(idTurno) {
+        if (!confirm('¿Cancelar este turno?')) return;
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/turnos/admin/cancelar/${idTurno}`, {
+                method: 'PATCH',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const result = await handleFetchError(response);
+            showAlert(result.message || 'Turno cancelado exitosamente');
+            await cargarHistorialTurnos(); // Recargar historial
+        } catch (error) {
+            showAlert('Error al cancelar turno: ' + error.message, true);
+            console.error(error);
+        }
+    }
 
     // ==================== CERRAR SESIÓN ====================
     document.getElementById("logout-button").addEventListener("click", () => {

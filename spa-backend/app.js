@@ -5,6 +5,7 @@ const crypto = require('crypto');
 const path = require('path');
 const db = require('./db');
 const { sendInvitationCode } = require('./utils/mailer');
+const TurnoStatusManager = require('./turnoStatusManager');
 const adminRoutes = require('./routes/adminRoutes');
 const authRoutes = require('./routes/authRoutes');
 const clientRoutes = require('./routes/clientRoutes');
@@ -13,6 +14,9 @@ const servicioRoutes = require('./routes/servicioRoutes');
 const comboRoutes = require('./routes/comboRoutes');
 
 const app = express();
+
+// Inicializar el sistema de gestión de turnos
+const turnoManager = new TurnoStatusManager();
 
 // Configuración básica
 app.use(cors());
@@ -65,3 +69,19 @@ const generateInitialCode = async () => {
     }
 };
 generateInitialCode();
+
+// Iniciar el sistema de monitoreo de turnos
+turnoManager.start();
+
+// Manejar el cierre del servidor
+process.on('SIGINT', () => {
+    console.log('🛑 Cerrando servidor...');
+    turnoManager.stop();
+    process.exit(0);
+});
+
+process.on('SIGTERM', () => {
+    console.log('🛑 Cerrando servidor...');
+    turnoManager.stop();
+    process.exit(0);
+});
