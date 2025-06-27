@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prueba Resumen Sticky - Sentirse Bien</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div style="padding: 40px; text-align: center;">
+        <h1>🧪 Prueba del Resumen Sticky</h1>
+        <p>Esta página es para probar el contenedor sticky del resumen.</p>
+        
+        <div style="margin: 20px 0;">
+            <h3>✅ Funcionalidades implementadas:</h3>
+            <ul style="text-align: left; max-width: 600px; margin: 0 auto;">
+                <li><strong>Estilo consistente:</strong> El resumen tiene el mismo estilo que el formulario principal</li>
+                <li><strong>Posición sticky:</strong> Se mantiene fijo al hacer scroll (en desktop)</li>
+                <li><strong>Responsive:</strong> En móviles se muestra arriba y no es sticky</li>
+                <li><strong>Layout flexbox:</strong> Se adapta automáticamente al espacio disponible</li>
+            </ul>
+        </div>
+        
+        <div style="margin: 20px 0;">
+            <h3>📱 Páginas actualizadas:</h3>
+            <ul style="text-align: left; max-width: 400px; margin: 0 auto;">
+                <li>✅ turnos.html - Resumen sticky en la derecha</li>
+                <li>✅ contacto.html - Resumen sticky en la derecha</li>
+            </ul>
+        </div>
+        
+        <div style="margin: 20px 0;">
+            <h3>🎨 Estilos aplicados:</h3>
+            <div class="turnos-summary-container" style="position: static; margin: 20px auto; max-width: 400px;">
+                <h2>Resumen de tu reserva</h2>
+                <p><strong>Turno seleccionado:</strong> <span>Ejemplo #123</span></p>
+                <p><strong>Fecha:</strong> <span>30/6/2025</span></p>
+                <p><strong>Hora:</strong> <span>14:00 - 16:00</span></p>
+                <p><strong>Servicios:</strong> <span>Masaje Relajante</span></p>
+                <p><strong>Duración:</strong> <span>120</span> min</p>
+                <p><strong>Precio:</strong> $<span>180.00</span></p>
+            </div>
+        </div>
+        
+        <div style="margin: 20px 0;">
+            <a href="turnos.html" style="padding: 10px 20px; margin: 10px; background: #d14d72; color: white; text-decoration: none; border-radius: 5px; display: inline-block;">
+                🎯 Probar en Turnos
+            </a>
+            
+            <a href="contacto.html" style="padding: 10px 20px; margin: 10px; background: #2d6a4f; color: white; text-decoration: none; border-radius: 5px; display: inline-block;">
+                📋 Probar en Contacto
+            </a>
+        </div>
+        
+        <!-- Contenido largo para probar el scroll -->
+        <div style="margin-top: 50px;">
+            <h3>📏 Contenido para probar scroll:</h3>
+            <div style="height: 200vh; background: linear-gradient(to bottom, #fff5f7, #d8f3dc); padding: 20px; margin: 20px 0; border-radius: 10px;">
+                <p>Scroll hacia abajo para ver el efecto sticky del resumen...</p>
+                <p style="margin-top: 100px;">El resumen debería quedarse fijo en la parte superior cuando haces scroll.</p>
+                <p style="margin-top: 100px;">En dispositivos móviles, el comportamiento cambia para mejor usabilidad.</p>
+                <p style="margin-top: 100px;">¡Sigue scrolleando para ver más!</p>
+                <p style="margin-top: 100px;">En desktop (> 768px) el resumen permanece visible.</p>
+                <p style="margin-top: 100px;">En móviles (≤ 768px) el resumen se muestra arriba del todo.</p>
+                <p style="margin-top: 100px;">¡Final del contenido de prueba!</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contenedor de ejemplo sticky -->
+    <div class="turnos-summary-container" style="position: fixed; top: 20px; right: 20px; max-width: 300px;">
+        <h2>Ejemplo Sticky</h2>
+        <p><strong>Estado:</strong> <span id="scroll-indicator">Preparado</span></p>
+        <p><strong>Scroll Y:</strong> <span id="scroll-position">0</span>px</p>
+        <p><strong>Viewport:</strong> <span id="viewport-size">-</span></p>
+    </div>
+
+    <script>
+        // Script para mostrar información de scroll
+        function updateScrollInfo() {
+            document.getElementById('scroll-position').textContent = window.scrollY;
+            document.getElementById('viewport-size').textContent = `${window.innerWidth}x${window.innerHeight}`;
+            
+            if (window.scrollY > 100) {
+                document.getElementById('scroll-indicator').textContent = 'Scrolleando';
+            } else {
+                document.getElementById('scroll-indicator').textContent = 'Preparado';
+            }
+        }
+        
+        window.addEventListener('scroll', updateScrollInfo);
+        window.addEventListener('resize', updateScrollInfo);
+        updateScrollInfo();
+    </script>
+</body>
+</html>

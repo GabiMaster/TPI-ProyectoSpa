@@ -521,6 +521,38 @@ h1, h2, h3,
     background-color: #b23a5e; /* Rosado más oscuro */
 }
 
+/* Contenedor del resumen de reserva - mismo estilo que el formulario principal + sticky */
+.turnos-summary-container {
+    width: 90%;
+    max-width: 400px;
+    margin: 20px auto;
+    padding: 20px;
+    background-color: #fff5f7; /* Rosado claro */
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(45, 106, 79, 0.1); /* Sombra verde */
+    border: 1px solid #ffb3c6; /* Borde rosado */
+    position: sticky;
+    top: 20px;
+    z-index: 100;
+}
+
+.turnos-summary-container h2 {
+    color: #d14d72; /* Rosado fuerte */
+    margin-bottom: 15px;
+    font-size: 1.3rem;
+    text-align: center;
+}
+
+.turnos-summary-container p {
+    margin: 8px 0;
+    color: #2d6a4f; /* Verde oscuro */
+    font-size: 0.95rem;
+}
+
+.turnos-summary-container strong {
+    color: #1b4332; /* Verde más oscuro */
+}
+
 /* ============ SECCIÓN DE CONTACTO ============ */
 .contact-main-container {
     display: flex;
@@ -2704,4 +2736,42 @@ button:hover {
         height: 26px;
     }
 }
+
 /* ==================== FIN BOTÓN FLOTANTE WHATSAPP ==================== */
+
+/* ==================== MEDIA QUERIES PARA RESUMEN STICKY ==================== */
+@media (max-width: 768px) {
+    .turnos-main-container,
+    .contact-main-container {
+        flex-direction: column;
+    }
+    
+    .turnos-summary-container {
+        position: static;
+        width: 95%;
+        max-width: none;
+        margin: 20px auto;
+        order: -1; /* Mostrar el resumen primero en móviles */
+    }
+    
+    .turnos-form-container,
+    .contact-form-container {
+        width: 95%;
+        max-width: none;
+    }
+}
+
+@media (min-width: 769px) {
+    .turnos-summary-container {
+        flex: 0 0 350px; /* Ancho fijo en desktop */
+        max-width: 350px;
+        height: fit-content;
+    }
+    
+    .turnos-form-container,
+    .contact-form-container {
+        flex: 1; /* Tomar el espacio restante */
+    }
+}
+
+/* ==================== FIN MEDIA QUERIES PARA RESUMEN STICKY ==================== */
