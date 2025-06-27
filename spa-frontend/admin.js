@@ -1673,7 +1673,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // ==================== MEJORAR HISTORIAL DE TURNOS ====================
     
     document.getElementById("view-historial-turnos")?.addEventListener("click", async () => {
-        await cargarHistorialTurnos('confirmado'); // Estado por defecto
+        await cargarHistorialTurnos('reservado'); // Cargar turnos reservados por defecto
         document.getElementById("historial-turnos-popup").classList.remove("hidden");
         document.getElementById("historial-turnos-popup").classList.add("show");
     });
@@ -1686,8 +1686,20 @@ document.addEventListener("DOMContentLoaded", () => {
             // Agregar clase active al botón clickeado
             e.target.classList.add('active');
             
-            const estado = e.target.id.replace('filter-', '');
-            await cargarHistorialTurnos(estado);
+            const filterId = e.target.id.replace('filter-', '');
+            console.log('[DEBUG] Filtro clickeado:', filterId);
+            
+            // Mapear los IDs de filtros a los estados reales de la base de datos
+            const estadoMapped = filterId === 'reservado' ? 'reservado' : 
+                               filterId === 'confirmado' ? 'atendido' :
+                               filterId === 'completado' ? 'atendido' :  // Por si acaso
+                               filterId === 'cancelado' ? 'cancelado' :
+                               filterId === 'expirado' ? 'expirado' :
+                               filterId === 'no-realizado' ? 'no_realizado' :
+                               'todos';
+            
+            console.log('[DEBUG] Estado mapeado:', estadoMapped);
+            await cargarHistorialTurnos(estadoMapped);
         });
     });
 
@@ -1696,12 +1708,17 @@ document.addEventListener("DOMContentLoaded", () => {
             const url = estado === 'todos' 
                 ? `${API_BASE_URL}/turnos/historial-completo`
                 : `${API_BASE_URL}/turnos/historial-completo?estado=${estado}`;
-                
+            
+            console.log('[DEBUG] URL del historial:', url);
+            
             const response = await fetch(url, {
                 headers: { "Authorization": `Bearer ${token}` }
             });
             
             const turnos = await handleFetchError(response);
+            console.log('[DEBUG] Turnos recibidos:', turnos.length, 'para estado:', estado);
+            console.log('[DEBUG] Primeros 3 turnos:', turnos.slice(0, 3));
+            
             mostrarHistorialEnPopup(turnos, estado);
             
         } catch (error) {
@@ -1713,11 +1730,21 @@ document.addEventListener("DOMContentLoaded", () => {
     function mostrarHistorialEnPopup(turnos, estado) {
         const content = document.getElementById("historial-turnos-list");
         
+        console.log('[DEBUG] mostrarHistorialEnPopup - turnos:', turnos.length, 'estado:', estado);
+        
+        // Mapear estado interno a texto amigable
+        const estadoTexto = estado === 'atendido' ? 'confirmados' :
+                           estado === 'reservado' ? 'reservados' :
+                           estado === 'cancelado' ? 'cancelados' :
+                           estado === 'expirado' ? 'expirados' :
+                           estado === 'no_realizado' ? 'no realizados' :
+                           estado === 'todos' ? '' : estado;
+        
         if (!turnos || turnos.length === 0) {
             content.innerHTML = `
                 <div class="list-item">
                     <div class="list-item-content">
-                        <div class="list-item-title">No hay turnos ${estado}</div>
+                        <div class="list-item-title">No hay turnos ${estadoTexto}</div>
                         <div class="list-item-subtitle">No se encontraron registros para este filtro</div>
                     </div>
                 </div>
@@ -1739,6 +1766,16 @@ document.addEventListener("DOMContentLoaded", () => {
                                     $${turno.precio_total}
                                 </div>
                             </div>
+                            ${turno.estado === 'reservado' ? `
+                                <div class="list-item-actions">
+                                    <button class="action-btn confirm-btn" onclick="confirmarTurnoAdmin(${turno.id_turno})" title="Confirmar como atendido">
+                                        ✅ Confirmar
+                                    </button>
+                                    <button class="action-btn cancel-btn" onclick="cancelarTurnoAdmin(${turno.id_turno})" title="Cancelar turno">
+                                        ❌ Cancelar
+                                    </button>
+                                </div>
+                            ` : ''}
                         </div>
                     `).join('')}
                 </div>
@@ -1746,5 +1783,91 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // ==================== FIN DEL DOCUMENTO ====================
+    // ==================== FUNCIONES PARA GESTIÓN DE TURNOS ====================
+    
+    // Función para confirmar turno como atendido (solo admin)
+    window.confirmarTurnoAdmin = async function(turnoId) {
+        if (!confirm('¿Estás seguro de que deseas confirmar este turno como atendido?')) {
+            return;
+        }
+        
+        try {
+            const response = await fetch(`${API_BASE_URL}/turnos/confirmar/${turnoId}`, {
+                method: 'PUT',
+                headers: { 
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                }
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || `Error ${response.status}: ${response.statusText}`);
+            }
+            
+            const result = await response.json();
+            showAlert(result.mensaje || "Turno confirmado como atendido exitosamente", false);
+            
+            // Recargar el historial si está abierto
+            const activeFilter = document.querySelector('.filter-btn.active');
+            if (activeFilter) {
+                const estado = activeFilter.textContent.toLowerCase();
+                const estadoMapped = estado === 'reservados' ? 'reservado' : 
+                                  estado === 'confirmados' ? 'atendido' :
+                                  estado === 'cancelados' ? 'cancelado' :
+                                  estado === 'expirados' ? 'expirado' :
+                                  estado === 'no realizados' ? 'no_realizado' :
+                                  'todos';
+                await cargarHistorialTurnos(estadoMapped);
+            }
+            
+        } catch (error) {
+            console.error('Error al confirmar turno:', error);
+            showAlert(`Error al confirmar turno: ${error.message}`, true);
+        }
+    };
+    
+    // Función para cancelar turno (admin puede cancelar sin restricciones)
+    window.cancelarTurnoAdmin = async function(turnoId) {
+        if (!confirm('¿Estás seguro de que deseas cancelar este turno? Esta acción no se puede deshacer.')) {
+            return;
+        }
+        
+        try {
+            const response = await fetch(`${API_BASE_URL}/turnos/cancelar/${turnoId}`, {
+                method: 'PUT',
+                headers: { 
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                }
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || `Error ${response.status}: ${response.statusText}`);
+            }
+            
+            const result = await response.json();
+            showAlert(result.mensaje || "Turno cancelado exitosamente", false);
+            
+            // Recargar el historial si está abierto
+            const activeFilter = document.querySelector('.filter-btn.active');
+            if (activeFilter) {
+                const estado = activeFilter.textContent.toLowerCase();
+                const estadoMapped = estado === 'reservados' ? 'reservado' : 
+                                  estado === 'confirmados' ? 'atendido' :
+                                  estado === 'cancelados' ? 'cancelado' :
+                                  estado === 'expirados' ? 'expirado' :
+                                  estado === 'no realizados' ? 'no_realizado' :
+                                  'todos';
+                await cargarHistorialTurnos(estadoMapped);
+            }
+            
+        } catch (error) {
+            console.error('Error al cancelar turno:', error);
+            showAlert(`Error al cancelar turno: ${error.message}`, true);
+        }
+    };
+
+    // ...existing code...
 });

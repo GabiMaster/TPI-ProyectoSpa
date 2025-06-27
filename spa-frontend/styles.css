@@ -1705,42 +1705,49 @@ button:hover {
 
 .list-item-actions {
     display: flex;
-    gap: 8px;
+    gap: 0.5rem;
+    align-items: center;
+    margin-left: auto;
 }
 
-/* ============ FILTROS Y BOTONES DE ESTADO ============ */
-.filter-buttons {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 20px;
-    padding-bottom: 15px;
-    border-bottom: 1px solid #e5e7eb;
-}
-
-.filter-btn {
-    padding: 8px 16px;
-    border: 2px solid #e5e7eb;
-    border-radius: 20px;
-    background: white;
-    color: #6b7280;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.filter-btn:hover {
-    border-color: #2d6a4f;
-    color: #2d6a4f;
-    transform: translateY(-1px);
-}
-
-.filter-btn.active {
-    background: linear-gradient(135deg, #2d6a4f 0%, #40916c 100%);
-    border-color: #2d6a4f;
+/* Botones de acción para historial de turnos */
+.confirm-btn {
+    background-color: #28a745;
     color: white;
-    box-shadow: 0 4px 12px rgba(45, 106, 79, 0.3);
+    border: 1px solid #28a745;
+    padding: 0.375rem 0.75rem;
+    border-radius: 0.25rem;
+    cursor: pointer;
+    font-size: 0.875rem;
+    transition: all 0.15s ease-in-out;
+}
+
+.confirm-btn:hover {
+    background-color: #218838;
+    border-color: #1e7e34;
+}
+
+.cancel-btn {
+    background-color: #dc3545;
+    color: white;
+    border: 1px solid #dc3545;
+    padding: 0.375rem 0.75rem;
+    border-radius: 0.25rem;
+    cursor: pointer;
+    font-size: 0.875rem;
+    transition: all 0.15s ease-in-out;
+}
+
+.cancel-btn:hover {
+    background-color: #c82333;
+    border-color: #bd2130;
+}
+
+.action-btn:disabled {
+    background-color: #6c757d;
+    border-color: #6c757d;
+    cursor: not-allowed;
+    opacity: 0.65;
 }
 
 /* ============ CRONOGRAMA Y VALIDACIÓN ============ */
