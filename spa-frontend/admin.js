@@ -1687,18 +1687,15 @@ document.addEventListener("DOMContentLoaded", () => {
             e.target.classList.add('active');
             
             const filterId = e.target.id.replace('filter-', '');
-            console.log('[DEBUG] Filtro clickeado:', filterId);
             
             // Mapear los IDs de filtros a los estados reales de la base de datos
             const estadoMapped = filterId === 'reservado' ? 'reservado' : 
                                filterId === 'confirmado' ? 'atendido' :
-                               filterId === 'completado' ? 'atendido' :  // Por si acaso
                                filterId === 'cancelado' ? 'cancelado' :
                                filterId === 'expirado' ? 'expirado' :
                                filterId === 'no-realizado' ? 'no_realizado' :
                                'todos';
             
-            console.log('[DEBUG] Estado mapeado:', estadoMapped);
             await cargarHistorialTurnos(estadoMapped);
         });
     });
@@ -1709,16 +1706,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 ? `${API_BASE_URL}/turnos/historial-completo`
                 : `${API_BASE_URL}/turnos/historial-completo?estado=${estado}`;
             
-            console.log('[DEBUG] URL del historial:', url);
-            
             const response = await fetch(url, {
                 headers: { "Authorization": `Bearer ${token}` }
             });
             
             const turnos = await handleFetchError(response);
-            console.log('[DEBUG] Turnos recibidos:', turnos.length, 'para estado:', estado);
-            console.log('[DEBUG] Primeros 3 turnos:', turnos.slice(0, 3));
-            
             mostrarHistorialEnPopup(turnos, estado);
             
         } catch (error) {
@@ -1729,8 +1721,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function mostrarHistorialEnPopup(turnos, estado) {
         const content = document.getElementById("historial-turnos-list");
-        
-        console.log('[DEBUG] mostrarHistorialEnPopup - turnos:', turnos.length, 'estado:', estado);
         
         // Mapear estado interno a texto amigable
         const estadoTexto = estado === 'atendido' ? 'confirmados' :

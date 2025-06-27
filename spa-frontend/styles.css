@@ -2264,3 +2264,46 @@ button:hover {
     gap: 0.5rem;
     align-items: center;
 }
+
+/* ============ ESTILOS PARA FILTROS DEL HISTORIAL DE TURNOS ============ */
+.filter-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.filter-btn {
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #495057;
+    background-color: #ffffff;
+    border: 2px solid #dee2e6;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.filter-btn:hover {
+    background-color: #e9ecef;
+    border-color: #adb5bd;
+    color: #343a40;
+}
+
+.filter-btn.active {
+    background-color: #2d6a4f;
+    color: #ffffff;
+    border-color: #2d6a4f;
+}
+
+.filter-btn.active:hover {
+    background-color: #1b4332;
+    border-color: #1b4332;
+}
