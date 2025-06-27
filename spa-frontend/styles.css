@@ -2542,3 +2542,49 @@ button:hover {
     margin: 0 0 10px 0;
     color: #856404;
 }
+
+/* ==================== ESTILOS PARA DESCUENTOS ==================== */
+
+.descuento-info {
+    margin-top: 8px;
+    padding: 8px;
+    background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+    border: 1px solid #c3e6cb;
+    border-radius: 5px;
+}
+
+.descuento-info small {
+    display: block;
+    color: #155724;
+    font-size: 12px;
+}
+
+.descuento {
+    font-weight: bold !important;
+    color: #28a745 !important;
+}
+
+#resumen-precio {
+    font-size: 18px;
+    font-weight: bold;
+    color: #007bff;
+}
+
+/* ==================== FIN ESTILOS DESCUENTOS ==================== */
+
+.descuento-elegible {
+    background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+    border: 1px solid #28a745;
+    border-radius: 5px;
+    padding: 8px 12px;
+    margin: 8px 0;
+    text-align: center;
+}
+
+.descuento-elegible small {
+    color: #155724;
+    font-weight: 600;
+    font-size: 13px;
+}
+
+/* ==================== FIN ESTILOS DESCUENTO ELEGIBLE ==================== */

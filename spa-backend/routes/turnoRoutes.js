@@ -167,6 +167,17 @@ router.post('/reservas', verifyToken, async (req, res) => {
         // Usar el gestor de turnos para reservar
         await turnoManager.reservarTurno(turno.id_turno, clienteId);
 
+        // Si hay descuento aplicado, actualizar el turno con la información
+        if (turno.descuentoAplicado && turno.descuentoAplicado > 0) {
+            await db.query(`
+                UPDATE turno 
+                SET precio_original = ?, descuento_aplicado = ?, precio_final = ?
+                WHERE id_turno = ?
+            `, [turno.precioOriginal, turno.descuentoAplicado, turno.precioTotal, turno.id_turno]);
+            
+            console.log(`Descuento aplicado: $${turno.descuentoAplicado} al turno ${turno.id_turno}`);
+        }
+
         // Obtener datos del turno reservado para el email
         const [turnoData] = await db.query(`
             SELECT t.*, c.nombre, c.apellido, c.email,
@@ -197,6 +208,16 @@ router.post('/reservas', verifyToken, async (req, res) => {
         
         const horaFormateada = `${turnoInfo.hora.substring(0, 5)} - ${turnoInfo.hora_fin.substring(0, 5)}`;
 
+        // Preparar información de precio y descuento
+        let precioInfo = `<p><strong>Precio:</strong> $${turnoInfo.precio_total}</p>`;
+        if (turno.descuentoAplicado && turno.descuentoAplicado > 0) {
+            precioInfo = `
+                <p><strong>Precio original:</strong> $${turno.precioOriginal}</p>
+                <p style="color: #28a745;"><strong>Descuento aplicado (15% - Débito + 48h):</strong> -$${turno.descuentoAplicado}</p>
+                <p style="color: #007bff; font-size: 18px;"><strong>Precio final:</strong> $${turno.precioTotal}</p>
+            `;
+        }
+
         // Enviar email de confirmación
         const mailOptions = {
             from: process.env.EMAIL_USER,
@@ -213,7 +234,7 @@ router.post('/reservas', verifyToken, async (req, res) => {
                         <p><strong>Hora:</strong> ${horaFormateada}</p>
                         <p><strong>Servicios:</strong> ${turnoInfo.servicios}</p>
                         <p><strong>Duración:</strong> ${turnoInfo.duracion_total} min</p>
-                        <p><strong>Precio:</strong> $${turnoInfo.precio_total}</p>
+                        ${precioInfo}
                         ${turnoInfo.empleados ? `<p><strong>Empleados:</strong> ${turnoInfo.empleados}</p>` : ''}
                     </div>
                     

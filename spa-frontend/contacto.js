@@ -89,9 +89,21 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         function actualizarInterfazTarjeta() {
             if (tarjetaGuardada) {
+                // Verificar si califica para descuento
+                const fechaTurno = new Date(`${fecha}T${hora}`);
+                const ahora = new Date();
+                const diffHoras = (fechaTurno - ahora) / (1000 * 60 * 60);
+                const calificaDescuento = diffHoras > 48;
+                
+                const mensajeDescuento = calificaDescuento ? 
+                    `<div class="descuento-elegible">
+                        <small>🎉 ¡Calificas para 15% de descuento por reservar con más de 48h de anticipación!</small>
+                    </div>` : '';
+
                 debitoInfo.innerHTML = `
                     <div class="tarjeta-guardada">
                         <h4>Tarjeta Guardada</h4>
+                        ${mensajeDescuento}
                         <div class="tarjeta-card-small">
                             <p><strong>Número:</strong> ${tarjetaGuardada.numero_tarjeta}</p>
                             <p><strong>Titular:</strong> ${tarjetaGuardada.titular}</p>
@@ -156,8 +168,20 @@ document.addEventListener("DOMContentLoaded", async () => {
                     }
                 });
             } else {
+                // Verificar si califica para descuento
+                const fechaTurno = new Date(`${fecha}T${hora}`);
+                const ahora = new Date();
+                const diffHoras = (fechaTurno - ahora) / (1000 * 60 * 60);
+                const calificaDescuento = diffHoras > 48;
+                
+                const mensajeDescuento = calificaDescuento ? 
+                    `<div class="descuento-elegible">
+                        <small>🎉 ¡Obten 15% de descuento al pagar con débito (reservas con +48h de anticipación)!</small>
+                    </div>` : '';
+
                 debitoInfo.innerHTML = `
                     <div class="sin-tarjeta">
+                        ${mensajeDescuento}
                         <p>No tienes ninguna tarjeta guardada.</p>
                         <div class="tarjeta-opciones">
                             <button type="button" id="agregar-tarjeta-nueva" class="btn-tarjeta primary">
@@ -186,6 +210,9 @@ document.addEventListener("DOMContentLoaded", async () => {
             radio.addEventListener("change", () => {
                 debitoInfo.style.display = radio.value === "debito" ? "block" : "none";
                 transferenciaInfo.style.display = radio.value === "transferencia" ? "block" : "none";
+                
+                // Actualizar precio según método de pago
+                actualizarResumenPrecio(radio.value);
             });
         });
 
@@ -218,7 +245,38 @@ document.addEventListener("DOMContentLoaded", async () => {
         document.getElementById("resumen-hora").textContent = `${hora.slice(0,5)} - ${hora_fin ? hora_fin.slice(0,5) : '-'}`;
         document.getElementById("resumen-servicios").textContent = servicios.join(', ');
         document.getElementById("resumen-duracion").textContent = duracionTotal || 0;
-        document.getElementById("resumen-precio").textContent = precioTotal.toFixed(2);
+        
+        // Mostrar precio inicial
+        actualizarResumenPrecio('transferencia'); // Por defecto sin descuento
+
+        // Función para actualizar el precio según el método de pago
+        function actualizarResumenPrecio(metodoPago) {
+            const fechaTurno = new Date(`${fecha}T${hora}`);
+            const ahora = new Date();
+            const diffHoras = (fechaTurno - ahora) / (1000 * 60 * 60);
+            
+            let precioFinal = precioTotal;
+            let descuentoTexto = '';
+            
+            // Aplicar descuento del 15% si es débito y más de 48 horas
+            if (metodoPago === 'debito' && diffHoras > 48) {
+                const descuento = precioTotal * 0.15;
+                precioFinal = precioTotal - descuento;
+                descuentoTexto = `
+                    <div class="descuento-info">
+                        <small>Precio original: $${precioTotal.toFixed(2)}</small><br>
+                        <small class="descuento">Descuento 15% (Débito + 48h): -$${descuento.toFixed(2)}</small>
+                    </div>
+                `;
+            }
+            
+            document.getElementById("resumen-precio").innerHTML = `
+                $${precioFinal.toFixed(2)}
+                ${descuentoTexto}
+            `;
+            
+            return precioFinal;
+        }
 
         // Rellenar datos del cliente
         document.getElementById("nombre").value = cliente.nombre;
@@ -328,6 +386,16 @@ document.addEventListener("DOMContentLoaded", async () => {
             const token = localStorage.getItem("token");
             const payload = JSON.parse(atob(token.split('.')[1]));
 
+            // Calcular precio final con descuento si aplica
+            const metodoPago = formData.get("metodo-pago");
+            let precioFinal = precioTotal;
+            let descuentoAplicado = 0;
+            
+            if (metodoPago === "debito" && diffHoras > 48) {
+                descuentoAplicado = precioTotal * 0.15;
+                precioFinal = precioTotal - descuentoAplicado;
+            }
+
             // Para este sistema, vamos a usar el ID del turno en lugar de servicios individuales
             const urlParams = new URLSearchParams(window.location.search);
             const turnoId = urlParams.get("turnoId");
@@ -347,8 +415,10 @@ document.addEventListener("DOMContentLoaded", async () => {
                     hora_fin,
                     servicios: servicios.join(', '), // Enviar como string
                     duracionTotal,
-                    precioTotal,
-                    metodoPago: formData.get("metodo-pago"),
+                    precioTotal: precioFinal, // Precio con descuento aplicado
+                    precioOriginal: precioTotal, // Precio original para referencia
+                    descuentoAplicado: descuentoAplicado, // Monto del descuento
+                    metodoPago: metodoPago,
                     estado: 'pendiente'
                 }
             };
