@@ -73,36 +73,49 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const fecha = new Date(turno.fecha);
                     const fechaFormateada = fecha.toLocaleDateString('es-ES');
                     
-                    // Calcular si han pasado más de 48 horas desde ahora hasta el turno
-                    const fechaHoraTurno = new Date(`${turno.fecha}T${turno.hora_inicio}`);
+                    // Construir fecha/hora correctamente
+                    const fechaStr = turno.fecha.split('T')[0]; // Solo la parte de fecha YYYY-MM-DD
+                    const horaInicio = turno.hora_inicio || turno.hora;
+                    const fechaHoraTurno = new Date(`${fechaStr}T${horaInicio}`);
+                    
                     const ahora = new Date();
                     const diffHoras = (fechaHoraTurno - ahora) / (1000 * 60 * 60);
-                    const puedeCancel = turno.estado === 'reservado' && diffHoras > 48;
+                    const puedeCancel = turno.estado === 'reservado' && diffHoras >= 48;
                     
-                    // Mostrar estado en español
-                    const estadoTexto = {
-                        'disponible': 'Disponible',
-                        'reservado': 'Reservado',
-                        'atendido': 'Atendido',
-                        'cancelado': 'Cancelado',
-                        'expirado': 'Expirado',
-                        'no_realizado': 'No Realizado'
+                    console.log(`Turno ${turno.id_turno}: fecha=${fechaStr}, hora=${horaInicio}, diffHoras=${diffHoras.toFixed(1)}, puedeCancel=${puedeCancel}`);
+                    
+                    // Mostrar estado en español con badges coloridos
+                    const estadoInfo = {
+                        'disponible': { text: 'Disponible', class: 'success' },
+                        'reservado': { text: 'Reservado', class: 'warning' },
+                        'atendido': { text: 'Atendido', class: 'info' },
+                        'cancelado': { text: 'Cancelado', class: 'secondary' },
+                        'expirado': { text: 'Expirado', class: 'danger' },
+                        'no_realizado': { text: 'No Realizado', class: 'danger' }
                     };
+                    
+                    const estadoData = estadoInfo[turno.estado] || { text: turno.estado, class: 'light' };
 
                     html += `<tr>
                         <td>${fechaFormateada}</td>
-                        <td>${turno.hora_inicio} - ${turno.hora_fin}</td>
+                        <td>${turno.hora_inicio || turno.hora} - ${turno.hora_fin || 'N/A'}</td>
                         <td>${turno.servicios || 'N/A'}</td>
                         <td>${turno.duracion_total || 0} min</td>
                         <td>$${Number(turno.precio_total || 0).toFixed(2)}</td>
-                        <td><span class="estado-badge estado-${turno.estado}">${estadoTexto[turno.estado] || turno.estado}</span></td>
+                        <td><span class="badge badge-${estadoData.class}">${estadoData.text}</span></td>
                         <td>${turno.fecha_reserva ? new Date(turno.fecha_reserva).toLocaleDateString('es-ES') : 'N/A'}</td>
                         <td>${
-                            puedeCancel
-                            ? `<button class="cancelar-turno-btn" data-id="${turno.id_turno}" data-fecha="${turno.fecha}" data-hora="${turno.hora_inicio}">Cancelar</button>`
-                            : (turno.estado === 'reservado' && diffHoras <= 48 && diffHoras > 0 
-                                ? '<span class="no-cancel-text">No cancelable (menos de 48h)</span>'
-                                : '')
+                            turno.estado === 'reservado' 
+                            ? (puedeCancel
+                                ? `<button class="btn btn-cancel cancelar-turno-btn" data-id="${turno.id_turno}" data-fecha="${fechaStr}" data-hora="${horaInicio}">🚫 Cancelar</button>`
+                                : diffHoras > 0 
+                                ? `<span class="text-muted small">❌ No cancelable<br><small>(Solo ${Math.round(diffHoras * 10) / 10}h de anticipación)</small></span>`
+                                : '<span class="text-danger small">⏰ Expirado</span>')
+                            : turno.estado === 'cancelado'
+                            ? '<span class="text-secondary">🚫 Cancelado</span>'
+                            : turno.estado === 'atendido'
+                            ? '<span class="text-success">✅ Completado</span>'
+                            : ''
                         }</td>
                     </tr>`;
                 });
@@ -116,30 +129,40 @@ document.addEventListener('DOMContentLoaded', async () => {
                         const fecha = btn.dataset.fecha;
                         const hora = btn.dataset.hora;
                         
-                        if (confirm('¿Seguro que deseas cancelar este turno?')) {
-                            // Doble validación de 48 horas
-                            const fechaHoraTurno = new Date(`${fecha}T${hora}`);
-                            const ahora = new Date();
-                            const diffHoras = (fechaHoraTurno - ahora) / (1000 * 60 * 60);
-                            
-                            if (diffHoras <= 48) {
-                                alert("No puedes cancelar el turno con menos de 48 horas de anticipación.");
-                                return;
-                            }
-                            
+                        if (confirm(`¿Seguro que deseas cancelar este turno del ${fecha} a las ${hora}?`)) {
                             const token = localStorage.getItem('token');
-                            const response = await fetch(`${API_BASE_URL}/turnos/cancelar/${idTurno}`, {
-                                method: 'PATCH',
-                                headers: { 'Authorization': `Bearer ${token}` }
-                            });
-                            
-                            if (response.ok) {
+                            try {
+                                const response = await fetch(`${API_BASE_URL}/turnos/cancelar/${idTurno}`, {
+                                    method: 'PUT',
+                                    headers: { 
+                                        'Authorization': `Bearer ${token}`,
+                                        'Content-Type': 'application/json'
+                                    }
+                                });
+                                
                                 const result = await response.json();
-                                alert(result.message || 'Turno cancelado correctamente');
-                                cargarHistorialReservas();
-                            } else {
-                                const error = await response.json();
-                                alert(error.error || 'No se pudo cancelar el turno');
+                                
+                                if (response.ok) {
+                                    let mensaje = result.mensaje || 'Turno cancelado correctamente';
+                                    if (result.horasAnticipacion) {
+                                        mensaje += `\n\nCancelado con ${result.horasAnticipacion} horas de anticipación.`;
+                                    }
+                                    alert(mensaje);
+                                    cargarHistorialReservas();
+                                } else {
+                                    // Mostrar mensaje de error específico
+                                    let errorMsg = result.error || 'No se pudo cancelar el turno';
+                                    if (errorMsg.includes('48 horas')) {
+                                        errorMsg = '⏰ Solo se pueden cancelar turnos con más de 48 horas de anticipación.';
+                                        if (result.horasRestantes) {
+                                            errorMsg += `\nTiempo restante: ${result.horasRestantes} horas.`;
+                                        }
+                                    }
+                                    alert(errorMsg);
+                                }
+                            } catch (error) {
+                                console.error('Error al cancelar turno:', error);
+                                alert('Error de conexión al cancelar el turno');
                             }
                         }
                     });
