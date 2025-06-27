@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prueba Botón WhatsApp - Sentirse Bien</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div style="padding: 40px; text-align: center;">
+        <h1>🧪 Prueba del Botón WhatsApp</h1>
+        <p>Esta página es para probar el botón flotante de WhatsApp.</p>
+        <p>Deberías ver un botón verde flotante en la esquina inferior derecha.</p>
+        <p>Al hacer clic, debería redirigirte a: <a href="https://wa.link/osb23b" target="_blank">https://wa.link/osb23b</a></p>
+        
+        <div style="margin: 20px 0;">
+            <h3>✅ Características del botón:</h3>
+            <ul style="text-align: left; max-width: 400px; margin: 0 auto;">
+                <li>Posición fija en la esquina inferior derecha</li>
+                <li>Color verde WhatsApp (#25d366)</li>
+                <li>Efecto hover con escala y cambio de color</li>
+                <li>Animación de pulso para llamar la atención</li>
+                <li>Responsive (se adapta a dispositivos móviles)</li>
+                <li>Accesible (con aria-label y title)</li>
+            </ul>
+        </div>
+        
+        <button onclick="testWhatsAppButton()" style="padding: 10px 20px; margin: 10px; background: #25d366; color: white; border: none; border-radius: 5px; cursor: pointer;">
+            🧪 Probar Botón WhatsApp
+        </button>
+        
+        <button onclick="window.location.href='index.html'" style="padding: 10px 20px; margin: 10px; background: #d14d72; color: white; border: none; border-radius: 5px; cursor: pointer;">
+            🏠 Volver al Inicio
+        </button>
+    </div>
+
+    <script>
+        function testWhatsAppButton() {
+            const button = document.getElementById('whatsapp-button');
+            if (button) {
+                alert('✅ Botón de WhatsApp encontrado! Al hacer clic se abrirá WhatsApp.');
+                // Simular un click
+                button.click();
+            } else {
+                alert('❌ No se encontró el botón de WhatsApp. Verifica que whatsapp-button.js se haya cargado correctamente.');
+            }
+        }
+        
+        // Verificar que el botón se cargó correctamente
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const button = document.getElementById('whatsapp-button');
+                if (button) {
+                    console.log('✅ Botón de WhatsApp cargado correctamente');
+                } else {
+                    console.error('❌ El botón de WhatsApp no se cargó');
+                }
+            }, 1000);
+        });
+    </script>
+    
+    <!-- Botón flotante de WhatsApp -->
+    <script src="whatsapp-button.js"></script>
+</body>
+</html>

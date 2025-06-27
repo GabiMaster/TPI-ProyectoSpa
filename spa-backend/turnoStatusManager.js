@@ -134,7 +134,7 @@ class TurnoStatusManager {
     /**
      * Reserva un turno para un cliente con validaciones
      */
-    async reservarTurno(turnoId, clienteId, esAdmin = false) {
+    async reservarTurno(turnoId, clienteId, metodoPago = 'efectivo', esAdmin = false) {
         const conexion = await db.getConnection();
         
         try {
@@ -164,8 +164,8 @@ class TurnoStatusManager {
             
             // Reservar el turno
             await conexion.query(
-                'UPDATE turno SET id_cliente = ?, estado = ?, fecha_reserva = NOW(), fecha_modificacion = NOW() WHERE id_turno = ?',
-                [clienteId, 'reservado', turnoId]
+                'UPDATE turno SET id_cliente = ?, estado = ?, metodo_pago = ?, fecha_reserva = NOW(), fecha_modificacion = NOW() WHERE id_turno = ?',
+                [clienteId, 'reservado', metodoPago, turnoId]
             );
             
             await conexion.commit();

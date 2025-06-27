@@ -111,7 +111,10 @@ router.get('/disponibles/:categoria', async (req, res) => {
 
 // Endpoint para reservar un turno existente
 router.post('/reservas', verifyToken, async (req, res) => {
-    console.log('Datos recibidos:', req.body);
+    console.log('=== DATOS RECIBIDOS EN RESERVA ===');
+    console.log('Datos completos:', JSON.stringify(req.body, null, 2));
+    console.log('Método de pago recibido:', req.body.turno?.metodoPago);
+    console.log('=====================================');
     try {
         const { turno, tarjeta } = req.body;
         const clienteId = req.user.id;
@@ -165,17 +168,18 @@ router.post('/reservas', verifyToken, async (req, res) => {
         }
 
         // Usar el gestor de turnos para reservar
-        await turnoManager.reservarTurno(turno.id_turno, clienteId);
+        await turnoManager.reservarTurno(turno.id_turno, clienteId, turno.metodoPago || 'efectivo');
 
         // Si hay descuento aplicado, actualizar el turno con la información
         if (turno.descuentoAplicado && turno.descuentoAplicado > 0) {
+            const precioFinal = turno.precioOriginal - turno.descuentoAplicado;
             await db.query(`
                 UPDATE turno 
                 SET precio_original = ?, descuento_aplicado = ?, precio_final = ?
                 WHERE id_turno = ?
-            `, [turno.precioOriginal, turno.descuentoAplicado, turno.precioTotal, turno.id_turno]);
+            `, [turno.precioOriginal, turno.descuentoAplicado, precioFinal, turno.id_turno]);
             
-            console.log(`Descuento aplicado: $${turno.descuentoAplicado} al turno ${turno.id_turno}`);
+            console.log(`💰 Descuento aplicado: $${turno.descuentoAplicado} - Precio final: $${precioFinal} (turno ${turno.id_turno})`);
         }
 
         // Obtener datos del turno reservado para el email
@@ -209,13 +213,17 @@ router.post('/reservas', verifyToken, async (req, res) => {
         const horaFormateada = `${turnoInfo.hora.substring(0, 5)} - ${turnoInfo.hora_fin.substring(0, 5)}`;
 
         // Preparar información de precio y descuento
-        let precioInfo = `<p><strong>Precio:</strong> $${turnoInfo.precio_total}</p>`;
-        if (turno.descuentoAplicado && turno.descuentoAplicado > 0) {
+        let precioInfo;
+        if (turnoInfo.precio_final && turnoInfo.precio_final > 0 && turnoInfo.descuento_aplicado > 0) {
+            // Turno con descuento
             precioInfo = `
-                <p><strong>Precio original:</strong> $${turno.precioOriginal}</p>
-                <p style="color: #28a745;"><strong>Descuento aplicado (15% - Débito + 48h):</strong> -$${turno.descuentoAplicado}</p>
-                <p style="color: #007bff; font-size: 18px;"><strong>Precio final:</strong> $${turno.precioTotal}</p>
+                <p><strong>Precio original:</strong> $${turnoInfo.precio_original}</p>
+                <p style="color: #28a745;"><strong>Descuento aplicado (15% - Débito + 48h):</strong> -$${turnoInfo.descuento_aplicado}</p>
+                <p style="color: #007bff; font-size: 18px;"><strong>Precio final:</strong> $${turnoInfo.precio_final}</p>
             `;
+        } else {
+            // Turno sin descuento
+            precioInfo = `<p><strong>Precio:</strong> $${turnoInfo.precio_total}</p>`;
         }
 
         // Enviar email de confirmación
@@ -472,6 +480,14 @@ router.get('/historial', verifyToken, async (req, res) => {
                 TIME_FORMAT(t.hora_fin, '%H:%i') as hora_fin,
                 t.estado,
                 t.precio_total,
+                t.precio_original,
+                t.descuento_aplicado,
+                t.precio_final,
+                CASE 
+                    WHEN t.precio_final IS NOT NULL AND t.precio_final > 0 THEN t.precio_final
+                    ELSE t.precio_total
+                END as precio_mostrar,
+                t.metodo_pago,
                 t.duracion_total,
                 GROUP_CONCAT(DISTINCT s.nombre ORDER BY s.nombre SEPARATOR ', ') as servicios,
                 GROUP_CONCAT(DISTINCT CONCAT(e.nombre, ' ', e.apellido) ORDER BY e.nombre SEPARATOR ', ') as empleados
@@ -481,7 +497,7 @@ router.get('/historial', verifyToken, async (req, res) => {
             LEFT JOIN turno_empleado te ON t.id_turno = te.id_turno
             LEFT JOIN empleado e ON te.id_empleado = e.id_empleado
             WHERE t.id_cliente = ?
-            GROUP BY t.id_turno, t.fecha, t.hora, t.hora_fin, t.estado, t.precio_total, t.duracion_total
+            GROUP BY t.id_turno, t.fecha, t.hora, t.hora_fin, t.estado, t.precio_total, t.precio_original, t.descuento_aplicado, t.precio_final, t.metodo_pago, t.duracion_total
             ORDER BY t.fecha DESC, t.hora DESC
         `;
         

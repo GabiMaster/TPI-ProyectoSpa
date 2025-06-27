@@ -1,8 +1,8 @@
 const db = require('../db');
 
-async function checkDatabaseStructure() {
+async function checkDBStructure() {
     try {
-        console.log('� VERIFICANDO ESTRUCTURA DE LA BASE DE DATOS');
+        console.log('🔍 VERIFICANDO ESTRUCTURA DE LA BASE DE DATOS');
         console.log('==============================================');
         
         // Verificar estructura de la tabla turno
@@ -45,6 +45,32 @@ async function checkDatabaseStructure() {
                 }
                 console.log(`  ${sql}`);
             });
+            
+            console.log('\n🔧 EJECUTANDO ALTERACIONES...');
+            // Ejecutar las alteraciones automáticamente
+            for (const col of missingColumns) {
+                try {
+                    let sql;
+                    switch(col) {
+                        case 'precio_original':
+                            sql = 'ALTER TABLE turno ADD COLUMN precio_original DECIMAL(10,2) NULL';
+                            break;
+                        case 'descuento_aplicado':
+                            sql = 'ALTER TABLE turno ADD COLUMN descuento_aplicado DECIMAL(10,2) DEFAULT 0';
+                            break;
+                        case 'precio_final':
+                            sql = 'ALTER TABLE turno ADD COLUMN precio_final DECIMAL(10,2) NULL';
+                            break;
+                        case 'metodo_pago':
+                            sql = 'ALTER TABLE turno ADD COLUMN metodo_pago VARCHAR(20) DEFAULT "efectivo"';
+                            break;
+                    }
+                    await db.query(sql);
+                    console.log(`  ✅ Columna ${col} agregada exitosamente`);
+                } catch (alterError) {
+                    console.log(`  ❌ Error agregando ${col}: ${alterError.message}`);
+                }
+            }
         }
         
         // Verificar algunos turnos de ejemplo
@@ -65,43 +91,28 @@ async function checkDatabaseStructure() {
             console.log('  No se encontraron turnos');
         }
         
+        // Verificar específicamente el turno 553
+        console.log('\n🎯 VERIFICANDO TURNO 553 ESPECÍFICAMENTE:');
+        const [turno553] = await db.query('SELECT * FROM turno WHERE id_turno = 553');
+        if (turno553.length > 0) {
+            const t = turno553[0];
+            console.log(`  ID: ${t.id_turno}`);
+            console.log(`  Estado: ${t.estado}`);
+            console.log(`  Cliente: ${t.id_cliente}`);
+            console.log(`  Precio total: ${t.precio_total}`);
+            console.log(`  Precio original: ${t.precio_original || 'NULL'}`);
+            console.log(`  Descuento aplicado: ${t.descuento_aplicado || 'NULL'}`);
+            console.log(`  Precio final: ${t.precio_final || 'NULL'}`);
+            console.log(`  Método pago: ${t.metodo_pago || 'NULL'}`);
+            console.log(`  Fecha: ${t.fecha}`);
+            console.log(`  Hora: ${t.hora}`);
+        } else {
+            console.log('  ❌ Turno 553 no encontrado');
+        }
+        
     } catch (error) {
         console.error('❌ Error:', error.message);
     }
 }
 
-checkDatabaseStructure();
-        
-        // Buscar si hay alguna tabla de precios
-        const tablesToCheck = ['precio', 'servicio_precio', 'precios'];
-        for (const tableName of tablesToCheck) {
-            try {
-                const [exists] = await db.query(`SHOW TABLES LIKE '${tableName}'`);
-                if (exists.length > 0) {
-                    console.log(`🔍 Estructura de tabla ${tableName.toUpperCase()}:`);
-                    const [structure] = await db.query(`DESCRIBE ${tableName}`);
-                    structure.forEach(column => {
-                        console.log(`   ${column.Field}: ${column.Type} ${column.Null === 'NO' ? 'NOT NULL' : ''} ${column.Key} ${column.Default ? `DEFAULT ${column.Default}` : ''}`);
-                    });
-                    console.log('');
-                }
-            } catch (e) {
-                // Tabla no existe, continuar
-            }
-        }
-        
-        // Verificar si hay datos de ejemplo en servicio
-        console.log('📊 Algunos servicios de ejemplo:');
-        const [servicios] = await db.query('SELECT * FROM servicio LIMIT 3');
-        servicios.forEach(servicio => {
-            console.log(`   ID: ${servicio.id_servicio}, Nombre: ${servicio.nombre}, Duración: ${servicio.duracion}`);
-        });
-        
-    } catch (error) {
-        console.error('❌ Error al verificar la estructura:', error);
-    } finally {
-        process.exit(0);
-    }
-}
-
-checkDatabaseStructure();
+checkDBStructure();

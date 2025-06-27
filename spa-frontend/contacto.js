@@ -49,6 +49,29 @@ document.addEventListener("DOMContentLoaded", async () => {
         // Configuración de métodos de pago
         const metodoPagoRadios = document.querySelectorAll("input[name='metodo-pago']");
         const debitoInfo = document.getElementById("debito-info");
+        
+        // Obtener datos de la URL primero
+        const urlParams = new URLSearchParams(window.location.search);
+        fecha = urlParams.get("fecha");
+        hora = urlParams.get("hora");
+        hora_fin = urlParams.get("hora_fin");
+        turnoId = urlParams.get("turnoId");
+        
+        // Los servicios vienen como string, no como JSON
+        const serviciosString = urlParams.get("servicios");
+        servicios = serviciosString ? serviciosString.split(', ').map(s => s.trim()) : [];
+        
+        duracionTotal = parseInt(urlParams.get("duracionTotal")) || 0;
+        precioTotal = parseFloat(urlParams.get("precio")) || 0;
+
+        // Validar datos de reserva
+        if (!fecha || !hora || servicios.length === 0) {
+            showToastError("Datos de reserva incompletos");
+            setTimeout(() => {
+                window.location.href = "turnos.html";
+            }, 2000);
+            return;
+        }
         const transferenciaInfo = document.getElementById("transferencia-info");
 
         // Verificar si el cliente tiene una tarjeta guardada
@@ -216,29 +239,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             });
         });
 
-        // Obtener datos de la URL
-        const urlParams = new URLSearchParams(window.location.search);
-        fecha = urlParams.get("fecha");
-        hora = urlParams.get("hora");
-        hora_fin = urlParams.get("hora_fin");
-        turnoId = urlParams.get("turnoId");
-        
-        // Los servicios vienen como string, no como JSON
-        const serviciosString = urlParams.get("servicios");
-        servicios = serviciosString ? serviciosString.split(', ').map(s => s.trim()) : [];
-        
-        duracionTotal = parseInt(urlParams.get("duracionTotal")) || 0;
-        precioTotal = parseFloat(urlParams.get("precio")) || 0;
-
-        // Validar datos de reserva
-        if (!fecha || !hora || servicios.length === 0) {
-            showToastError("Datos de reserva incompletos");
-            setTimeout(() => {
-                window.location.href = "turnos.html";
-            }, 2000);
-            return;
-        }
-
         // Mostrar resumen
         document.getElementById("turno-seleccionado").textContent = turnoId ? `Turno #${turnoId}` : "Ninguno";
         document.getElementById("resumen-fecha").textContent = new Date(fecha).toLocaleDateString('es-ES');
@@ -251,9 +251,17 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         // Función para actualizar el precio según el método de pago
         function actualizarResumenPrecio(metodoPago) {
+            console.log('🔍 DEBUG actualizarResumenPrecio - metodoPago:', metodoPago);
+            
             const fechaTurno = new Date(`${fecha}T${hora}`);
             const ahora = new Date();
             const diffHoras = (fechaTurno - ahora) / (1000 * 60 * 60);
+            
+            console.log('🔍 DEBUG - fechaTurno:', fechaTurno);
+            console.log('🔍 DEBUG - ahora:', ahora);
+            console.log('🔍 DEBUG - diffHoras:', diffHoras);
+            console.log('🔍 DEBUG - diffHoras > 48?', diffHoras > 48);
+            console.log('🔍 DEBUG - metodoPago === "debito"?', metodoPago === 'debito');
             
             let precioFinal = precioTotal;
             let descuentoTexto = '';
@@ -262,12 +270,17 @@ document.addEventListener("DOMContentLoaded", async () => {
             if (metodoPago === 'debito' && diffHoras > 48) {
                 const descuento = precioTotal * 0.15;
                 precioFinal = precioTotal - descuento;
+                console.log('✅ DEBUG - Aplicando descuento:', descuento);
+                console.log('✅ DEBUG - Precio final:', precioFinal);
+                
                 descuentoTexto = `
                     <div class="descuento-info">
                         <small>Precio original: $${precioTotal.toFixed(2)}</small><br>
                         <small class="descuento">Descuento 15% (Débito + 48h): -$${descuento.toFixed(2)}</small>
                     </div>
                 `;
+            } else {
+                console.log('❌ DEBUG - No se aplica descuento');
             }
             
             document.getElementById("resumen-precio").innerHTML = `
