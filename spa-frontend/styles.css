@@ -502,6 +502,25 @@ h1, h2, h3,
     background-color: #b23a5e; /* Rosado más oscuro */
 }
 
+/* Botón de continuar - mismo estilo que el botón de confirmar reserva */
+.turnos-continue-button {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    background-color: #d14d72; /* Rosado fuerte */
+    color: #fff5f7; /* Rosado claro */
+    border: none;
+    border-radius: 5px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    margin-top: 15px;
+}
+
+.turnos-continue-button:hover {
+    background-color: #b23a5e; /* Rosado más oscuro */
+}
+
 /* ============ SECCIÓN DE CONTACTO ============ */
 .contact-main-container {
     display: flex;
