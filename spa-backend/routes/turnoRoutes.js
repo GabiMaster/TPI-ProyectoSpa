@@ -18,6 +18,35 @@ const transporter = nodemailer.createTransport({
     }
 });
 
+// Endpoint para obtener TODOS los turnos disponibles
+router.get('/disponibles', async (req, res) => {
+    try {
+        const query = `SELECT t.id_turno, t.fecha, t.hora, t.hora_fin, t.precio_total, t.duracion_total,
+                              (SELECT GROUP_CONCAT(DISTINCT s.nombre SEPARATOR ', ') 
+                               FROM turno_servicio ts 
+                               JOIN servicio s ON ts.id_servicio = s.id_servicio 
+                               WHERE ts.id_turno = t.id_turno) AS servicios,
+                              (SELECT GROUP_CONCAT(DISTINCT CONCAT(e.nombre, ' ', e.apellido) SEPARATOR ', ') 
+                               FROM turno_empleado te 
+                               JOIN empleado e ON te.id_empleado = e.id_empleado 
+                               WHERE te.id_turno = t.id_turno) AS empleados,
+                              (SELECT GROUP_CONCAT(DISTINCT s.categoria SEPARATOR ', ') 
+                               FROM turno_servicio ts 
+                               JOIN servicio s ON ts.id_servicio = s.id_servicio 
+                               WHERE ts.id_turno = t.id_turno) AS categorias
+                       FROM turno t
+                       WHERE t.estado = 'disponible'
+                       AND t.fecha >= CURDATE()
+                       ORDER BY t.fecha, t.hora`;
+
+        const [turnos] = await db.query(query);
+        res.json(turnos);
+    } catch (error) {
+        console.error('Error al obtener todos los turnos disponibles:', error);
+        res.status(500).json({ error: 'Error al obtener turnos disponibles' });
+    }
+});
+
 // Endpoint para obtener turnos disponibles por categoría
 router.get('/disponibles/:categoria', async (req, res) => {
     const { categoria } = req.params;

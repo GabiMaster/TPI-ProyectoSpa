@@ -113,23 +113,25 @@
 
         <!-- Pop-up Lista de administradores -->
         <div id="admins-popup" class="popup hidden">
-            <h3>Lista de Administradores</h3>
             <div class="popup-content">
-                <table id="admins-table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Nombre</th>
-                            <th>Email</th>
-                            <th>Teléfono</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-            <div class="popup-actions">
-                <button type="button" id="cerrar-admins-popup" class="popup-btn secondary">Cerrar</button>
+                <h3>Lista de Administradores</h3>
+                <div id="admins-list">
+                    <table id="admins-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nombre</th>
+                                <th>Email</th>
+                                <th>Teléfono</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+                <div class="popup-actions">
+                    <button type="button" id="cerrar-admins-popup" class="popup-btn secondary">Cerrar</button>
+                </div>
             </div>
         </div>
 
@@ -175,23 +177,25 @@
 
         <!-- Pop-up Lista de empleados -->
         <div id="employees-popup" class="popup hidden">
-            <h3>Lista de Empleados</h3>
             <div class="popup-content">
-                <table id="employees-table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Nombre</th>
-                            <th>Email</th>
-                            <th>Especialidad</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-            <div class="popup-actions">
-                <button type="button" id="cerrar-employees-popup" class="popup-btn secondary">Cerrar</button>
+                <h3>Lista de Empleados</h3>
+                <div id="employees-list">
+                    <table id="employees-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nombre</th>
+                                <th>Email</th>
+                                <th>Especialidad</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+                <div class="popup-actions">
+                    <button type="button" id="cerrar-employees-popup" class="popup-btn secondary">Cerrar</button>
+                </div>
             </div>
         </div>
 
@@ -283,13 +287,13 @@
 
                 <!-- Pop-up para seleccionar servicios del combo -->
                 <div id="servicios-combo-popup" class="popup hidden">
-                    <h3>Selecciona los servicios para el combo</h3>
                     <div class="popup-content">
+                        <h3>Selecciona los servicios para el combo</h3>
                         <div id="servicios-combo-lista"></div>
-                    </div>
-                    <div class="popup-actions">
-                        <button type="button" id="cerrar-servicios-combo-popup" class="popup-btn secondary">Cancelar</button>
-                        <button type="button" id="guardar-servicios-combo-popup" class="popup-btn primary">Guardar selección</button>
+                        <div class="popup-actions">
+                            <button type="button" id="cerrar-servicios-combo-popup" class="popup-btn secondary">Cancelar</button>
+                            <button type="button" id="guardar-servicios-combo-popup" class="popup-btn primary">Guardar selección</button>
+                        </div>
                     </div>
                 </div>
 
@@ -317,13 +321,13 @@
                 <!-- Servicios -->
                 <button type="button" id="btn-seleccionar-servicios">Seleccionar servicios</button>
                 <div id="servicios-popup" class="popup hidden">
-                    <h3>Selecciona los servicios</h3>
                     <div class="popup-content">
+                        <h3>Selecciona los servicios</h3>
                         <div id="servicios-categorias"></div>
-                    </div>
-                    <div class="popup-actions">
-                        <button type="button" id="cerrar-servicios-popup" class="popup-btn secondary">Cancelar</button>
-                        <button type="button" id="guardar-servicios-popup" class="popup-btn primary">Guardar selección</button>
+                        <div class="popup-actions">
+                            <button type="button" id="cerrar-servicios-popup" class="popup-btn secondary">Cancelar</button>
+                            <button type="button" id="guardar-servicios-popup" class="popup-btn primary">Guardar selección</button>
+                        </div>
                     </div>
                 </div>
                 <div id="servicios-seleccionados"></div>
@@ -392,12 +396,12 @@
             
             <!-- Pop-up para mostrar el cronograma -->
             <div id="schedule-popup" class="popup hidden">
-                <h3>Cronograma del Empleado</h3>
                 <div class="popup-content">
+                    <h3>Cronograma del Empleado</h3>
                     <div id="schedule-content"></div>
-                </div>
-                <div class="popup-actions">
-                    <button type="button" id="cerrar-schedule-popup" class="popup-btn secondary">Cerrar</button>
+                    <div class="popup-actions">
+                        <button type="button" id="cerrar-schedule-popup" class="popup-btn secondary">Cerrar</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -430,26 +434,26 @@
             
             <!-- Pop-up para mostrar resultados de validación -->
             <div id="validation-popup" class="popup hidden">
-                <h3>Resultados de Validación</h3>
                 <div class="popup-content">
+                    <h3>Resultados de Validación</h3>
                     <div id="validation-content"></div>
-                </div>
-                <div class="popup-actions">
-                    <button type="button" id="cerrar-validation-popup" class="popup-btn secondary">Cerrar</button>
+                    <div class="popup-actions">
+                        <button type="button" id="cerrar-validation-popup" class="popup-btn secondary">Cerrar</button>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- Pop-up Lista de turnos disponibles -->
         <div id="available-turnos-popup" class="popup hidden">
-            <h3>Turnos Disponibles</h3>
             <div class="popup-content">
+                <h3>Turnos Disponibles</h3>
                 <div id="available-turnos-list">
                     <p>Cargando turnos disponibles...</p>
                 </div>
-            </div>
-            <div class="popup-actions">
-                <button type="button" id="cerrar-available-turnos-popup" class="popup-btn secondary">Cerrar</button>
+                <div class="popup-actions">
+                    <button type="button" id="cerrar-available-turnos-popup" class="popup-btn secondary">Cerrar</button>
+                </div>
             </div>
         </div>
 
@@ -463,8 +467,8 @@
 
         <!-- Pop-up Contenedor del historial de turnos -->
         <div id="historial-turnos-popup" class="popup hidden">
-            <h3>Historial de Turnos</h3>
             <div class="popup-content">
+                <h3>Historial de Turnos</h3>
                 <div class="filter-buttons">
                     <button id="filter-reservado" class="filter-btn active">Reservados</button>
                     <button id="filter-confirmado" class="filter-btn">Confirmados</button>
@@ -476,9 +480,9 @@
                 <div id="historial-turnos-list">
                     <p>Cargando historial...</p>
                 </div>
-            </div>
-            <div class="popup-actions">
-                <button type="button" id="cerrar-historial-turnos-popup" class="popup-btn secondary">Cerrar</button>
+                <div class="popup-actions">
+                    <button type="button" id="cerrar-historial-turnos-popup" class="popup-btn secondary">Cerrar</button>
+                </div>
             </div>
         </div>
     </section>

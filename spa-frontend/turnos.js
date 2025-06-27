@@ -1,13 +1,141 @@
 document.addEventListener("DOMContentLoaded", () => {
     let turnoSeleccionado = null;
+    let turnosOriginales = []; // Para almacenar los turnos sin filtrar
+
+    // Función para mostrar turnos en el grid
+    function mostrarTurnos(turnos) {
+        if (!turnos.length) {
+            document.getElementById('popup-turnos-lista').innerHTML = "<p class='no-turnos'>No se encontraron turnos que coincidan con los filtros.</p>";
+            return;
+        }
+
+        const turnosGrid = document.createElement('div');
+        turnosGrid.className = 'turnos-grid';
+        
+        turnos.forEach(t => {
+            const turnoCard = document.createElement('div');
+            turnoCard.className = 'turno-card';
+            turnoCard.dataset.turno = JSON.stringify(t);
+            
+            turnoCard.innerHTML = `
+                <div class="turno-fecha-hora">
+                    <div class="turno-fecha">${new Date(t.fecha).toLocaleDateString('es-ES', { 
+                        weekday: 'long', 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                    })}</div>
+                    <div class="turno-hora">${t.hora.slice(0,5)} - ${t.hora_fin ? t.hora_fin.slice(0,5) : '-'}</div>
+                </div>
+                ${t.categorias ? `<div class="turno-categoria">${t.categorias}</div>` : ''}
+                <div class="turno-servicios">
+                    <div class="turno-servicios-label">Servicios</div>
+                    <div class="turno-servicios-lista">${t.servicios}</div>
+                </div>
+                <div class="turno-empleados">
+                    <div class="turno-empleados-label">Empleados</div>
+                    <div class="turno-empleados-lista">${t.empleados || 'Por asignar'}</div>
+                </div>
+                <div class="turno-footer">
+                    <div class="turno-precio">$${parseFloat(t.precio_total).toFixed(2)}</div>
+                    <div class="turno-duracion">${t.duracion_total || 0} min</div>
+                </div>
+                <button type="button" class="seleccionar-turno-btn">Seleccionar este turno</button>
+            `;
+            
+            // Agregar event listener al botón de seleccionar
+            const selectBtn = turnoCard.querySelector('.seleccionar-turno-btn');
+            selectBtn.addEventListener('click', () => seleccionarTurno(t.id_turno));
+            
+            turnosGrid.appendChild(turnoCard);
+        });
+        
+        document.getElementById('popup-turnos-lista').innerHTML = '';
+        document.getElementById('popup-turnos-lista').appendChild(turnosGrid);
+    }
+
+    // Función para filtrar turnos
+    function filtrarTurnos() {
+        const filtro = document.getElementById('filtro-busqueda').value.toLowerCase();
+        const ordenar = document.getElementById('filtro-ordenar').value;
+
+        let turnosFiltrados = turnosOriginales.filter(turno => {
+            const servicios = turno.servicios ? turno.servicios.toLowerCase() : '';
+            const empleados = turno.empleados ? turno.empleados.toLowerCase() : '';
+            const fecha = new Date(turno.fecha).toLocaleDateString('es-ES').toLowerCase();
+            const categorias = turno.categorias ? turno.categorias.toLowerCase() : '';
+
+            return servicios.includes(filtro) || 
+                   empleados.includes(filtro) || 
+                   fecha.includes(filtro) ||
+                   categorias.includes(filtro);
+        });
+
+        // Ordenar turnos
+        switch (ordenar) {
+            case 'fecha':
+                turnosFiltrados.sort((a, b) => new Date(a.fecha + 'T' + a.hora) - new Date(b.fecha + 'T' + b.hora));
+                break;
+            case 'precio':
+                turnosFiltrados.sort((a, b) => parseFloat(a.precio_total) - parseFloat(b.precio_total));
+                break;
+            case 'duracion':
+                turnosFiltrados.sort((a, b) => (b.duracion_total || 0) - (a.duracion_total || 0));
+                break;
+        }
+
+        mostrarTurnos(turnosFiltrados);
+    }
+
+    // Event listeners para filtros
+    document.getElementById('filtro-busqueda').addEventListener('input', filtrarTurnos);
+    document.getElementById('filtro-ordenar').addEventListener('change', filtrarTurnos);
+
+    // Función para limpiar filtros
+    function limpiarFiltros() {
+        document.getElementById('filtro-busqueda').value = '';
+        document.getElementById('filtro-ordenar').value = 'fecha';
+    }
+
+    // Evento para el botón de ver TODOS los turnos disponibles
+    document.querySelector('.ver-todos-turnos-btn').addEventListener('click', async () => {
+        limpiarFiltros(); // Limpiar filtros al abrir
+        document.getElementById('popup-titulo').textContent = 'Cargando turnos disponibles...';
+        document.getElementById('popup-turnos-disponibles').classList.remove('hidden');
+        document.getElementById('popup-turnos-lista').innerHTML = "<div class='loading-spinner'>Cargando...</div>";
+
+        try {
+            const res = await fetch('http://localhost:3000/api/turnos/disponibles');
+            
+            if (!res.ok) {
+                throw new Error(`Error HTTP: ${res.status}`);
+            }
+            
+            const turnos = await res.json();
+            turnosOriginales = turnos; // Guardar los turnos originales
+            
+            // Actualizar título con contador
+            document.getElementById('popup-titulo').textContent = `Todos los turnos disponibles (${turnos.length} turnos)`;
+            
+            if (!turnos.length) {
+                document.getElementById('popup-turnos-lista').innerHTML = "<p class='no-turnos'>No hay turnos disponibles en este momento.</p>";
+            } else {
+                mostrarTurnos(turnos);
+            }
+        } catch (e) {
+            document.getElementById('popup-turnos-lista').innerHTML = "<p class='error-message'>Error al cargar los turnos. Intenta nuevamente.</p>";
+            console.error('Error al cargar turnos:', e);
+        }
+    });
 
     // Evento para los botones de ver turnos por categoría
     document.querySelectorAll('.ver-turnos-btn').forEach(btn => {
         btn.addEventListener('click', async () => {
+            limpiarFiltros(); // Limpiar filtros al abrir
             const categoria = btn.dataset.categoria;
-            document.getElementById('popup-titulo').textContent = `Turnos disponibles para ${categoria}`;
+            document.getElementById('popup-titulo').textContent = `Cargando turnos para ${categoria}...`;
             document.getElementById('popup-turnos-disponibles').classList.remove('hidden');
-            document.getElementById('popup-turnos-lista').innerHTML = "Cargando...";
+            document.getElementById('popup-turnos-lista').innerHTML = "<div class='loading-spinner'>Cargando...</div>";
 
             try {
                 const res = await fetch(`http://localhost:3000/api/turnos/disponibles/${encodeURIComponent(categoria)}`);
@@ -17,41 +145,18 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
                 
                 const turnos = await res.json();
+                turnosOriginales = turnos; // Guardar los turnos originales
+                
+                // Actualizar título con contador
+                document.getElementById('popup-titulo').textContent = `${categoria} (${turnos.length} turnos disponibles)`;
                 
                 if (!turnos.length) {
-                    document.getElementById('popup-turnos-lista').innerHTML = "<p>No hay turnos disponibles para esta categoría.</p>";
+                    document.getElementById('popup-turnos-lista').innerHTML = `<p class='no-turnos'>No hay turnos disponibles para la categoría ${categoria}.</p>`;
                 } else {
-                    const turnosGrid = document.createElement('div');
-                    turnosGrid.className = 'turnos-grid';
-                    
-                    turnos.forEach(t => {
-                        const turnoCard = document.createElement('div');
-                        turnoCard.className = 'turno-card';
-                        turnoCard.dataset.turno = JSON.stringify(t);
-                        
-                        turnoCard.innerHTML = `
-                            <h4>Turno #${t.id_turno}</h4>
-                            <p><strong>Fecha:</strong> ${new Date(t.fecha).toLocaleDateString('es-ES')}</p>
-                            <p><strong>Hora:</strong> ${t.hora.slice(0,5)} - ${t.hora_fin ? t.hora_fin.slice(0,5) : '-'}</p>
-                            <p><strong>Servicios:</strong> ${t.servicios}</p>
-                            <p><strong>Empleados:</strong> ${t.empleados || 'Por asignar'}</p>
-                            <p><strong>Duración:</strong> ${t.duracion_total || 0} min</p>
-                            <p><strong>Precio:</strong> $${parseFloat(t.precio_total).toFixed(2)}</p>
-                            <button type="button" class="seleccionar-turno-btn">Seleccionar</button>
-                        `;
-                        
-                        // Agregar event listener al botón de seleccionar
-                        const selectBtn = turnoCard.querySelector('.seleccionar-turno-btn');
-                        selectBtn.addEventListener('click', () => seleccionarTurno(t.id_turno));
-                        
-                        turnosGrid.appendChild(turnoCard);
-                    });
-                    
-                    document.getElementById('popup-turnos-lista').innerHTML = '';
-                    document.getElementById('popup-turnos-lista').appendChild(turnosGrid);
+                    mostrarTurnos(turnos);
                 }
             } catch (e) {
-                document.getElementById('popup-turnos-lista').innerHTML = "<p>Error al cargar los turnos. Intenta nuevamente.</p>";
+                document.getElementById('popup-turnos-lista').innerHTML = "<p class='error-message'>Error al cargar los turnos. Intenta nuevamente.</p>";
                 console.error('Error al cargar turnos:', e);
             }
         });
@@ -61,6 +166,13 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById('cerrar-popup-turnos').onclick = () => {
         document.getElementById('popup-turnos-disponibles').classList.add('hidden');
     };
+
+    // Cerrar pop-up haciendo clic fuera de él
+    document.getElementById('popup-turnos-disponibles').addEventListener('click', (e) => {
+        if (e.target === document.getElementById('popup-turnos-disponibles')) {
+            document.getElementById('popup-turnos-disponibles').classList.add('hidden');
+        }
+    });
 
     // Función global para seleccionar turno
     window.seleccionarTurno = (idTurno) => {

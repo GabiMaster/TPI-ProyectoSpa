@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Pop-ups Admin</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            padding: 20px;
+            font-family: Arial, sans-serif;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .test-button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-button:hover {
+            background: #2563eb;
+        }
+    </style>
+</head>
+<body>
+    <h1>Prueba de Pop-ups del Admin</h1>
+    
+    <div class="test-section">
+        <h2>Pop-ups del Panel de Admin</h2>
+        <button class="test-button" onclick="openTestPopup('admins-popup')">Test Administradores</button>
+        <button class="test-button" onclick="openTestPopup('employees-popup')">Test Empleados</button>
+        <button class="test-button" onclick="openTestPopup('servicios-popup')">Test Servicios</button>
+        <button class="test-button" onclick="openTestPopup('available-turnos-popup')">Test Turnos Disponibles</button>
+        <button class="test-button" onclick="openTestPopup('historial-turnos-popup')">Test Historial</button>
+    </div>
+
+    <!-- Pop-ups de prueba -->
+    <div id="admins-popup" class="popup hidden">
+        <div class="popup-content">
+            <h3>Test - Lista de Administradores</h3>
+            <div id="admins-list">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nombre</th>
+                            <th>Email</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1</td>
+                            <td>Admin Test</td>
+                            <td>admin@test.com</td>
+                            <td>
+                                <button class="action-btn edit-btn">Editar</button>
+                                <button class="action-btn delete-btn">Eliminar</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="popup-actions">
+                <button type="button" class="popup-btn secondary" onclick="closePopup('admins-popup')">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="employees-popup" class="popup hidden">
+        <div class="popup-content">
+            <h3>Test - Lista de Empleados</h3>
+            <div id="employees-list">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nombre</th>
+                            <th>Email</th>
+                            <th>Especialidad</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1</td>
+                            <td>Empleado Test</td>
+                            <td>empleado@test.com</td>
+                            <td>Masajes</td>
+                            <td>
+                                <button class="action-btn edit-btn">Editar</button>
+                                <button class="action-btn delete-btn">Eliminar</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="popup-actions">
+                <button type="button" class="popup-btn secondary" onclick="closePopup('employees-popup')">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="servicios-popup" class="popup hidden">
+        <div class="popup-content">
+            <h3>Test - Seleccionar Servicios</h3>
+            <div id="servicios-categorias">
+                <div style="padding: 20px;">
+                    <h4>Belleza</h4>
+                    <label><input type="checkbox"> Corte de cabello</label><br>
+                    <label><input type="checkbox"> Manicura</label><br>
+                    <h4>Masajes</h4>
+                    <label><input type="checkbox"> Masaje relajante</label><br>
+                    <label><input type="checkbox"> Masaje descontracturante</label><br>
+                </div>
+            </div>
+            <div class="popup-actions">
+                <button type="button" class="popup-btn secondary" onclick="closePopup('servicios-popup')">Cancelar</button>
+                <button type="button" class="popup-btn primary" onclick="closePopup('servicios-popup')">Guardar selección</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="available-turnos-popup" class="popup hidden">
+        <div class="popup-content">
+            <h3>Test - Turnos Disponibles</h3>
+            <div id="available-turnos-list">
+                <div class="turnos-grid">
+                    <div class="turno-card">
+                        <div class="turno-fecha-hora">
+                            <div class="turno-fecha">lunes, 30 de junio de 2025</div>
+                            <div class="turno-hora">08:00 - 09:30</div>
+                        </div>
+                        <div class="turno-categoria">Masajes</div>
+                        <div class="turno-servicios">
+                            <div class="turno-servicios-label">Servicios</div>
+                            <div class="turno-servicios-lista">Masaje Descontracturante</div>
+                        </div>
+                        <div class="turno-empleados">
+                            <div class="turno-empleados-label">Empleados</div>
+                            <div class="turno-empleados-lista">Ana García</div>
+                        </div>
+                        <div class="turno-footer">
+                            <div class="turno-precio">$800.00</div>
+                            <div class="turno-duracion">60 min</div>
+                        </div>
+                        <button type="button" class="seleccionar-turno-btn">Seleccionar este turno</button>
+                    </div>
+                </div>
+            </div>
+            <div class="popup-actions">
+                <button type="button" class="popup-btn secondary" onclick="closePopup('available-turnos-popup')">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="historial-turnos-popup" class="popup hidden">
+        <div class="popup-content">
+            <h3>Test - Historial de Turnos</h3>
+            <div class="filter-buttons">
+                <button class="filter-btn active">Reservados</button>
+                <button class="filter-btn">Confirmados</button>
+                <button class="filter-btn">Cancelados</button>
+                <button class="filter-btn">Todos</button>
+            </div>
+            <div id="historial-turnos-list">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Cliente</th>
+                            <th>Fecha</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1</td>
+                            <td>Cliente Test</td>
+                            <td>2025-06-30</td>
+                            <td>Reservado</td>
+                            <td>
+                                <button class="action-btn edit-btn">Ver</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="popup-actions">
+                <button type="button" class="popup-btn secondary" onclick="closePopup('historial-turnos-popup')">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openTestPopup(popupId) {
+            document.getElementById(popupId).classList.remove('hidden');
+        }
+
+        function closePopup(popupId) {
+            document.getElementById(popupId).classList.add('hidden');
+        }
+
+        // Cerrar pop-ups haciendo clic fuera
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('popup')) {
+                e.target.classList.add('hidden');
+            }
+        });
+
+        // Cerrar con ESC
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const popups = document.querySelectorAll('.popup:not(.hidden)');
+                popups.forEach(popup => {
+                    popup.classList.add('hidden');
+                });
+            }
+        });
+    </script>
+</body>
+</html>

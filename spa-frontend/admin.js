@@ -1402,26 +1402,38 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("historial-turnos-popup").classList.add("hidden");
     });
 
-    // Cerrar pop-ups al hacer clic fuera - extender función existente con limpieza de estilos
-    document.addEventListener('click', (e) => {
+    // ==================== FUNCIONALIDAD PARA CERRAR POP-UPS ==================== 
+    // Función para cerrar pop-ups haciendo clic fuera de ellos
+    function setupPopupClickOutside() {
         const popups = [
-            'servicios-popup', 'empleados-popup', 'schedule-popup', 
-            'validation-popup', 'admins-popup', 'employees-popup',
+            'admins-popup', 'employees-popup', 'servicios-popup', 
+            'servicios-combo-popup', 'schedule-popup', 'validation-popup',
             'available-turnos-popup', 'historial-turnos-popup'
         ];
-        
+
         popups.forEach(popupId => {
             const popup = document.getElementById(popupId);
-            if (popup && e.target === popup) {
-                popup.classList.add('hidden');
-                popup.classList.remove('show');
-                // Limpiar estilos inline especialmente para schedule-popup
-                if (popupId === 'schedule-popup') {
-                    popup.style.cssText = '';
-                    console.log('Pop-up de cronograma cerrado por clic fuera - estilos limpiados');
-                }
+            if (popup) {
+                popup.addEventListener('click', (e) => {
+                    if (e.target === popup) {
+                        popup.classList.add('hidden');
+                    }
+                });
             }
         });
+    }
+
+    // Llamar a la función para configurar el cierre por clic fuera
+    setupPopupClickOutside();
+
+    // Función para cerrar todos los pop-ups con ESC
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            const popups = document.querySelectorAll('.popup:not(.hidden)');
+            popups.forEach(popup => {
+                popup.classList.add('hidden');
+            });
+        }
     });
 
     // ==================== FUNCIONES MEJORADAS PARA CRONOGRAMA ====================
@@ -1673,6 +1685,10 @@ document.addEventListener("DOMContentLoaded", () => {
             const turnos = await handleFetchError(response);
             mostrarTurnosDisponiblesEnPopup(turnos);
             
+            // Mostrar el pop-up
+            const popup = document.getElementById("available-turnos-popup");
+            popup.classList.remove("hidden");
+            
         } catch (error) {
             showAlert("Error al cargar turnos disponibles: " + error.message, true);
             console.error(error);
@@ -1685,57 +1701,77 @@ document.addEventListener("DOMContentLoaded", () => {
         
         if (!turnos || turnos.length === 0) {
             content.innerHTML = `
-                <div class="list-item">
-                    <div class="list-item-content">
-                        <div class="list-item-title">No hay turnos disponibles</div>
-                        <div class="list-item-subtitle">Todos los horarios están ocupados</div>
-                    </div>
+                <div class="no-turnos-message">
+                    <h4>No hay turnos disponibles</h4>
+                    <p>Todos los horarios están ocupados</p>
                 </div>
             `;
         } else {
-            content.innerHTML = `
-                <div class="scrollable-list">
-                    ${turnos.map(turno => {
-                        // Usar los nombres correctos de las propiedades del backend
-                        const fecha = turno.fecha || 'Fecha no especificada';
-                        const horaInicio = turno.hora_inicio || 'Hora no especificada';
-                        const horaFin = turno.hora_fin || '';
-                        const servicios = turno.servicios || 'Servicio no especificado';
-                        const empleados = turno.empleados || 'Empleado no asignado';
-                        const precio = turno.precio_total || '0';
-                        const idTurno = turno.id_turno || 'N/A';
-                        const estado = turno.estado || 'disponible';
-                        const duracion = turno.duracion_total || '';
-                        
-                        // Formatear fecha
-                        let fechaFormateada = fecha;
-                        if (fecha !== 'Fecha no especificada') {
-                            try {
-                                fechaFormateada = new Date(fecha).toLocaleDateString('es-ES');
-                            } catch (e) {
-                                fechaFormateada = fecha;
-                            }
-                        }
-                        
-                        return `
-                            <div class="list-item">
-                                <div class="list-item-content">
-                                    <div class="list-item-title">
-                                        ${fechaFormateada} - ${horaInicio}${horaFin ? ` a ${horaFin}` : ''}
-                                        <span class="validation-status ${estado}">${estado}</span>
-                                    </div>
-                                    <div class="list-item-subtitle">
-                                        Servicios: ${servicios} | Empleados: ${empleados}
-                                    </div>
-                                    <div class="list-item-subtitle">
-                                        Precio: $${parseFloat(precio || 0).toFixed(2)}${duracion ? ` | Duración: ${duracion} min` : ''}
-                                    </div>
-                                </div>
-                            </div>
-                        `;
-                    }).join('')}
-                </div>
-            `;
+            // Crear un grid de tarjetas similar al de turnos.js
+            const turnosGrid = document.createElement('div');
+            turnosGrid.className = 'turnos-grid';
+            
+            turnos.forEach(turno => {
+                // Usar los nombres correctos de las propiedades del backend
+                const fecha = turno.fecha || 'Fecha no especificada';
+                const horaInicio = turno.hora_inicio || 'Hora no especificada';
+                const horaFin = turno.hora_fin || '';
+                const servicios = turno.servicios || 'Servicio no especificado';
+                const empleados = turno.empleados || 'Empleado no asignado';
+                const precio = turno.precio_total || '0';
+                const idTurno = turno.id_turno || 'N/A';
+                const estado = turno.estado || 'disponible';
+                const duracion = turno.duracion_total || '';
+                const categorias = turno.categorias || '';
+                
+                // Formatear fecha
+                let fechaFormateada = fecha;
+                if (fecha !== 'Fecha no especificada') {
+                    try {
+                        const fechaObj = new Date(fecha);
+                        fechaFormateada = fechaObj.toLocaleDateString('es-ES', { 
+                            weekday: 'long', 
+                            year: 'numeric', 
+                            month: 'long', 
+                            day: 'numeric' 
+                        });
+                    } catch (e) {
+                        fechaFormateada = fecha;
+                    }
+                }
+                
+                const turnoCard = document.createElement('div');
+                turnoCard.className = 'turno-card';
+                turnoCard.dataset.turno = JSON.stringify(turno);
+                
+                turnoCard.innerHTML = `
+                    <div class="turno-fecha-hora">
+                        <div class="turno-fecha">${fechaFormateada}</div>
+                        <div class="turno-hora">${horaInicio}${horaFin ? ` - ${horaFin}` : ''}</div>
+                    </div>
+                    ${categorias ? `<div class="turno-categoria">${categorias}</div>` : ''}
+                    <div class="turno-servicios">
+                        <div class="turno-servicios-label">Servicios</div>
+                        <div class="turno-servicios-lista">${servicios}</div>
+                    </div>
+                    <div class="turno-empleados">
+                        <div class="turno-empleados-label">Empleados</div>
+                        <div class="turno-empleados-lista">${empleados}</div>
+                    </div>
+                    <div class="turno-footer">
+                        <div class="turno-precio">$${parseFloat(precio || 0).toFixed(2)}</div>
+                        <div class="turno-duracion">${duracion || 0} min</div>
+                    </div>
+                    <div class="turno-estado">
+                        <span class="validation-status ${estado}">${estado}</span>
+                    </div>
+                `;
+                
+                turnosGrid.appendChild(turnoCard);
+            });
+            
+            content.innerHTML = '';
+            content.appendChild(turnosGrid);
         }
         
         popup.classList.remove("hidden");
@@ -1804,44 +1840,92 @@ document.addEventListener("DOMContentLoaded", () => {
         
         if (!turnos || turnos.length === 0) {
             content.innerHTML = `
-                <div class="list-item">
-                    <div class="list-item-content">
-                        <div class="list-item-title">No hay turnos ${estadoTexto}</div>
-                        <div class="list-item-subtitle">No se encontraron registros para este filtro</div>
-                    </div>
+                <div class="no-turnos-message">
+                    <h4>No hay turnos ${estadoTexto}</h4>
+                    <p>No se encontraron registros para este filtro</p>
                 </div>
             `;
         } else {
-            content.innerHTML = `
-                <div class="scrollable-list">
-                    ${turnos.map(turno => `
-                        <div class="list-item">
-                            <div class="list-item-content">
-                                <div class="list-item-title">
-                                    ${turno.fecha} - ${turno.hora_inicio}
-                                    <span class="validation-status ${turno.estado}">${turno.estado}</span>
-                                </div>
-                                <div class="list-item-subtitle">
-                                    Cliente: ${turno.cliente_nombre && turno.cliente_apellido ? `${turno.cliente_nombre} ${turno.cliente_apellido}` : 'No asignado'} | 
-                                    Servicios: ${turno.servicios || 'N/A'} | 
-                                    Empleados: ${turno.empleados || 'N/A'} | 
-                                    $${turno.precio_total}
-                                </div>
-                            </div>
-                            ${turno.estado === 'reservado' ? `
-                                <div class="list-item-actions">
-                                    <button class="action-btn confirm-btn" onclick="confirmarTurnoAdmin(${turno.id_turno})" title="Confirmar como atendido">
-                                        ✅ Confirmar
-                                    </button>
-                                    <button class="action-btn cancel-btn" onclick="cancelarTurnoAdmin(${turno.id_turno})" title="Cancelar turno">
-                                        ❌ Cancelar
-                                    </button>
-                                </div>
-                            ` : ''}
+            // Crear un grid de tarjetas similar al de turnos.js
+            const turnosGrid = document.createElement('div');
+            turnosGrid.className = 'turnos-grid';
+            
+            turnos.forEach(turno => {
+                const fecha = turno.fecha || 'Fecha no especificada';
+                const horaInicio = turno.hora_inicio || 'Hora no especificada';
+                const horaFin = turno.hora_fin || '';
+                const servicios = turno.servicios || 'Servicio no especificado';
+                const empleados = turno.empleados || 'Empleado no asignado';
+                const precio = turno.precio_total || '0';
+                const idTurno = turno.id_turno || 'N/A';
+                const estadoTurno = turno.estado || 'disponible';
+                const duracion = turno.duracion_total || '';
+                const categorias = turno.categorias || '';
+                const clienteNombre = turno.cliente_nombre && turno.cliente_apellido ? 
+                    `${turno.cliente_nombre} ${turno.cliente_apellido}` : 'No asignado';
+                
+                // Formatear fecha
+                let fechaFormateada = fecha;
+                if (fecha !== 'Fecha no especificada') {
+                    try {
+                        const fechaObj = new Date(fecha);
+                        fechaFormateada = fechaObj.toLocaleDateString('es-ES', { 
+                            weekday: 'long', 
+                            year: 'numeric', 
+                            month: 'long', 
+                            day: 'numeric' 
+                        });
+                    } catch (e) {
+                        fechaFormateada = fecha;
+                    }
+                }
+                
+                const turnoCard = document.createElement('div');
+                turnoCard.className = 'turno-card';
+                turnoCard.dataset.turno = JSON.stringify(turno);
+                
+                turnoCard.innerHTML = `
+                    <div class="turno-fecha-hora">
+                        <div class="turno-fecha">${fechaFormateada}</div>
+                        <div class="turno-hora">${horaInicio}${horaFin ? ` - ${horaFin}` : ''}</div>
+                    </div>
+                    ${categorias ? `<div class="turno-categoria">${categorias}</div>` : ''}
+                    <div class="turno-cliente">
+                        <div class="turno-cliente-label">Cliente</div>
+                        <div class="turno-cliente-nombre">${clienteNombre}</div>
+                    </div>
+                    <div class="turno-servicios">
+                        <div class="turno-servicios-label">Servicios</div>
+                        <div class="turno-servicios-lista">${servicios}</div>
+                    </div>
+                    <div class="turno-empleados">
+                        <div class="turno-empleados-label">Empleados</div>
+                        <div class="turno-empleados-lista">${empleados}</div>
+                    </div>
+                    <div class="turno-footer">
+                        <div class="turno-precio">$${parseFloat(precio || 0).toFixed(2)}</div>
+                        <div class="turno-duracion">${duracion || 0} min</div>
+                    </div>
+                    <div class="turno-estado">
+                        <span class="validation-status ${estadoTurno}">${estadoTurno}</span>
+                    </div>
+                    ${estadoTurno === 'reservado' ? `
+                        <div class="turno-actions">
+                            <button class="action-btn confirm-btn" onclick="confirmarTurnoAdmin(${idTurno})" title="Confirmar como atendido">
+                                ✅ Confirmar
+                            </button>
+                            <button class="action-btn cancel-btn" onclick="cancelarTurnoAdmin(${idTurno})" title="Cancelar turno">
+                                ❌ Cancelar
+                            </button>
                         </div>
-                    `).join('')}
-                </div>
-            `;
+                    ` : ''}
+                `;
+                
+                turnosGrid.appendChild(turnoCard);
+            });
+            
+            content.innerHTML = '';
+            content.appendChild(turnosGrid);
         }
     }
 

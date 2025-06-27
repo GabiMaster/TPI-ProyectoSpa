@@ -1385,34 +1385,32 @@ button:hover {
 /* ============ POP-UPS DE SELECCIÓN ============ */
 .popup {
     position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
     z-index: 1000;
-    max-width: 600px;
-    width: 90%;
-    max-height: 80vh;
     display: flex;
-    flex-direction: column;
-    overflow: hidden;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
 }
 
 .popup.hidden {
     display: none;
 }
 
-.popup::before {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
+.popup-content {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    max-width: 900px;
     width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: -1;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
 .popup h3 {
@@ -1421,13 +1419,15 @@ button:hover {
     margin: 0;
     padding: 20px;
     font-size: 18px;
+    font-weight: 600;
     border-radius: 12px 12px 0 0;
 }
 
-.popup-content {
+.popup #popup-turnos-lista {
     padding: 20px;
     overflow-y: auto;
     flex: 1;
+    max-height: 60vh;
 }
 
 .popup-actions {
@@ -1483,7 +1483,7 @@ button:hover {
 }
 
 /* ============ ESTILOS PARA TABLAS EN POP-UPS ============ */
-.popup table {
+.popup-content table {
     width: 100%;
     border-collapse: collapse;
     font-size: 14px;
@@ -1491,9 +1491,10 @@ button:hover {
     border-radius: 8px;
     overflow: hidden;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    margin-top: 10px;
 }
 
-.popup table th {
+.popup-content table th {
     background: linear-gradient(135deg, #2d6a4f 0%, #40916c 100%);
     color: white;
     padding: 12px 8px;
@@ -1503,26 +1504,30 @@ button:hover {
     border-bottom: 2px solid #1b4332;
 }
 
-.popup table td {
+.popup-content table td {
     padding: 10px 8px;
     border-bottom: 1px solid #e5e7eb;
     vertical-align: middle;
+    word-wrap: break-word;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-.popup table tbody tr:hover {
+.popup-content table tbody tr:hover {
     background: #f0f9ff;
 }
 
-.popup table tbody tr:nth-child(even) {
+.popup-content table tbody tr:nth-child(even) {
     background: #f9fafb;
 }
 
-.popup table tbody tr:nth-child(even):hover {
+.popup-content table tbody tr:nth-child(even):hover {
     background: #f0f9ff;
 }
 
-/* Botones de acción en tablas */
-.popup table .action-btn {
+/* Botones de acción en tablas de pop-ups */
+.popup-content table .action-btn {
     padding: 4px 8px;
     margin: 0 2px;
     border: none;
@@ -1533,324 +1538,43 @@ button:hover {
     transition: all 0.2s ease;
 }
 
-.popup table .edit-btn {
+.popup-content table .edit-btn {
     background: #3b82f6;
     color: white;
 }
 
-.popup table .edit-btn:hover {
+.popup-content table .edit-btn:hover {
     background: #2563eb;
     transform: translateY(-1px);
 }
 
-.popup table .delete-btn {
+.popup-content table .delete-btn {
     background: #ef4444;
     color: white;
 }
 
-.popup table .delete-btn:hover {
+.popup-content table .delete-btn:hover {
     background: #dc2626;
     transform: translateY(-1px);
 }
 
-/* ============ ESTILOS DE VALIDACIÓN DE EMPLEADOS ============ */
-.validation-summary {
-    margin-bottom: 20px;
-    padding: 15px;
-    background: #f0f9ff;
-    border: 1px solid #0ea5e9;
-    border-radius: 8px;
+/* Asegurar que el contenido no se salga del pop-up */
+.popup-content {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
-.validation-summary h4 {
-    margin: 0;
-    color: #0369a1;
-    font-size: 16px;
-}
-
-.validation-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 15px;
-    border-bottom: 1px solid #e5e7eb;
-    background: white;
-    transition: background-color 0.2s;
-}
-
-.validation-item:hover {
-    background-color: #f9fafb;
-}
-
-.validation-item:last-child {
-    border-bottom: none;
-}
-
-.empleado-info {
-    flex: 1;
-}
-
-.empleado-name {
-    font-weight: 600;
-    color: #1f2937;
-    margin-bottom: 2px;
-}
-
-.empleado-role {
-    font-size: 14px;
-    color: #6b7280;
-}
-
-.conflict-details {
+.popup-content table {
+    table-layout: auto;
     width: 100%;
-    margin-top: 8px;
-    padding: 8px 12px;
-    background-color: #fef2f2;
-    border-radius: 6px;
-    border-left: 3px solid #ef4444;
 }
 
-.conflict-details small {
-    color: #7f1d1d;
-    font-style: italic;
-}
-
-.conflict-turnos {
-    margin-top: 4px;
-    font-size: 12px;
-    color: #991b1b;
-    font-weight: 500;
-}
-
-/* ============ LISTAS CON SCROLL MEJORADAS ============ */
-.scrollable-list {
-    max-height: 400px;
-    overflow-y: auto;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    background: white;
-}
-
-.scrollable-list::-webkit-scrollbar {
-    width: 8px;
-}
-
-.scrollable-list::-webkit-scrollbar-track {
-    background: #f1f5f9;
-    border-radius: 4px;
-}
-
-.scrollable-list::-webkit-scrollbar-thumb {
-    background: linear-gradient(135deg, #2d6a4f 0%, #40916c 100%);
-    border-radius: 4px;
-}
-
-.scrollable-list::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(135deg, #1b4332 0%, #2d6a4f 100%);
-}
-
-/* Items de lista */
-.list-item {
-    padding: 12px 16px;
-    border-bottom: 1px solid #e5e7eb;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    transition: background 0.2s ease;
-}
-
-.list-item:hover {
-    background: #f0f9ff;
-}
-
-.list-item:last-child {
-    border-bottom: none;
-}
-
-.list-item-content {
-    flex: 1;
-}
-
-.list-item-title {
-    font-weight: 600;
-    color: #1f2937;
-    margin-bottom: 4px;
-}
-
-.list-item-subtitle {
-    font-size: 12px;
-    color: #6b7280;
-}
-
-.list-item-actions {
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
-    margin-left: auto;
-}
-
-/* Botones de acción para historial de turnos */
-.confirm-btn {
-    background-color: #28a745;
-    color: white;
-    border: 1px solid #28a745;
-    padding: 0.375rem 0.75rem;
-    border-radius: 0.25rem;
-    cursor: pointer;
-    font-size: 0.875rem;
-    transition: all 0.15s ease-in-out;
-}
-
-.confirm-btn:hover {
-    background-color: #218838;
-    border-color: #1e7e34;
-}
-
-.cancel-btn {
-    background-color: #dc3545;
-    color: white;
-    border: 1px solid #dc3545;
-    padding: 0.375rem 0.75rem;
-    border-radius: 0.25rem;
-    cursor: pointer;
-    font-size: 0.875rem;
-    transition: all 0.15s ease-in-out;
-}
-
-.cancel-btn:hover {
-    background-color: #c82333;
-    border-color: #bd2130;
-}
-
-.action-btn:disabled {
-    background-color: #6c757d;
-    border-color: #6c757d;
-    cursor: not-allowed;
-    opacity: 0.65;
-}
-
-/* ============ CRONOGRAMA Y VALIDACIÓN ============ */
-.schedule-item, .validation-item {
-    background: white;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    padding: 16px;
-    margin-bottom: 12px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-.schedule-item:hover, .validation-item:hover {
-    border-color: #2d6a4f;
-    box-shadow: 0 4px 12px rgba(45, 106, 79, 0.1);
-}
-
-.schedule-time {
-    font-weight: 600;
-    color: #2d6a4f;
-    font-size: 16px;
-}
-
-.schedule-service {
-    color: #1f2937;
-    margin: 4px 0;
-}
-
-.schedule-client {
-    color: #6b7280;
-    font-size: 14px;
-}
-
-.validation-status {
-    display: inline-block;
-    padding: 6px 12px;
-    border-radius: 20px;
-    font-size: 14px;
-    font-weight: 500;
-    text-align: center;
-    min-width: 100px;
-}
-
-.validation-status.available {
-    background-color: #dcfce7;
-    color: #166534;
-    border: 1px solid #bbf7d0;
-}
-
-.validation-status.busy {
-    background-color: #fee2e2;
-    color: #991b1b;
-    border: 1px solid #fecaca;
-}
-
-.validation-status.conflict {
-    background-color: #fef3c7;
-    color: #d97706;
-    border: 1px solid #fed7aa;
-}
-
-/* ============ EMPLEADOS EN VALIDACIÓN ============ */
-.validation-empleados-list {
-    max-height: 250px;
-    overflow-y: auto;
-    overflow-x: hidden;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    background: #f9fafb;
-    scrollbar-width: thin;
-    scrollbar-color: #cbd5e1 #f1f5f9;
-}
-
-.validation-empleados-list::-webkit-scrollbar {
-    width: 6px;
-}
-
-.validation-empleados-list::-webkit-scrollbar-track {
-    background: #f1f5f9;
-    border-radius: 3px;
-}
-
-.validation-empleados-list::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
-    border-radius: 3px;
-}
-
-.validation-empleados-list::-webkit-scrollbar-thumb:hover {
-    background: #94a3b8;
-}
-
-.validation-empleado-item {
-    display: flex;
-    align-items: center;
-    padding: 12px;
-    border-bottom: 1px solid #e5e7eb;
-    background: white;
-    margin: 2px;
-    border-radius: 6px;
-}
-
-.validation-empleado-item:last-child {
-    border-bottom: none;
-}
-
-.validation-empleado-item input[type="checkbox"] {
-    margin-right: 12px;
-    width: 18px;
-    height: 18px;
-    accent-color: #2d6a4f;
-}
-
-.validation-empleado-info {
-    flex: 1;
-}
-
-.validation-empleado-name {
-    font-weight: 600;
-    color: #1f2937;
-}
-
-.validation-empleado-role {
-    font-size: 12px;
-    color: #6b7280;
+.popup-content table th,
+.popup-content table td {
+    min-width: 80px;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* ============ RESPONSIVE PARA POP-UPS ============ */
@@ -2057,10 +1781,19 @@ button:hover {
     align-items: center;
 }
 
-/* ============ ESTILOS PARA POP-UP DE TURNOS DISPONIBLES ============ */
-#available-turnos-popup {
-    max-width: 800px;
+/* ============ ESTILOS PARA POP-UP DE TURNOS DISPONIBLES (ADMIN Y TURNOS) ============ */
+#available-turnos-popup .popup-content,
+#popup-turnos-disponibles .popup-content {
+    max-width: 900px;
     width: 95%;
+}
+
+#available-turnos-popup #available-turnos-list,
+#popup-turnos-disponibles #popup-turnos-lista {
+    padding: 20px;
+    overflow-y: auto;
+    flex: 1;
+    max-height: 60vh;
 }
 
 .turnos-grid {
@@ -2089,12 +1822,6 @@ button:hover {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
-.turno-card.selected {
-    border-color: #10b981;
-    background: #d1fae5;
-    color: #065f46;
-}
-
 .turno-fecha-hora {
     display: flex;
     justify-content: space-between;
@@ -2108,6 +1835,9 @@ button:hover {
     font-weight: 700;
     font-size: 16px;
     color: #1f2937;
+    text-transform: capitalize;
+    font-size: 14px;
+    line-height: 1.2;
 }
 
 .turno-hora {
@@ -2119,28 +1849,25 @@ button:hover {
     font-weight: 500;
 }
 
-.turno-servicios {
-    margin-bottom: 10px;
-}
-
-.turno-servicios-label {
+.turno-categoria {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
     font-size: 12px;
-    color: #6b7280;
-    text-transform: uppercase;
     font-weight: 600;
-    margin-bottom: 4px;
+    text-align: center;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
-.turno-servicios-lista {
-    color: #374151;
-    font-size: 14px;
-    line-height: 1.4;
-}
-
+.turno-servicios,
 .turno-empleados {
     margin-bottom: 10px;
 }
 
+.turno-servicios-label,
 .turno-empleados-label {
     font-size: 12px;
     color: #6b7280;
@@ -2149,6 +1876,7 @@ button:hover {
     margin-bottom: 4px;
 }
 
+.turno-servicios-lista,
 .turno-empleados-lista {
     color: #374151;
     font-size: 14px;
@@ -2296,72 +2024,371 @@ button:hover {
 }
 
 .filter-btn:hover {
-    background-color: #e9ecef;
-    border-color: #adb5bd;
-    color: #343a40;
+    background: #d1d5db;
 }
 
 .filter-btn.active {
-    background-color: #2d6a4f;
-    color: #ffffff;
+    background: #3b82f6;
+    color: white;
+}
+
+/* ============ FILTROS DEL POP-UP ============ */
+.popup-filters {
+    padding: 0 20px 20px 20px;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.filter-input, .filter-select {
+    flex: 1;
+    min-width: 200px;
+    padding: 10px 12px;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    transition: border-color 0.2s ease;
+    background: white;
+}
+
+.filter-input:focus, .filter-select:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.filter-input::placeholder {
+    color: #9ca3af;
+}
+
+/* ============ ESTILOS ESPECÍFICOS PARA POP-UPS DE ADMIN ============ */
+.popup-content > div:not(.popup-actions) {
+    padding: 20px;
+    overflow-y: auto;
+    flex: 1;
+    max-height: 60vh;
+}
+
+.popup-content > h3 + div:not(.popup-actions) {
+    padding-top: 0;
+}
+
+/* Estilos para listas dentro de pop-ups */
+.popup-content #admins-list,
+.popup-content #employees-list,
+.popup-content #schedule-content,
+.popup-content #servicios-combo-lista,
+.popup-content #servicios-categorias {
+    padding: 0;
+    margin: 0;
+}
+
+/* Asegurar que las tablas en pop-ups se vean bien */
+.popup-content table {
+    margin: 0;
+    width: 100%;
+}
+
+/* Estilos para los filtros en pop-ups */
+.popup-content .filter-buttons {
+    padding: 0 0 15px 0;
+    border-bottom: 1px solid #e5e7eb;
+    margin-bottom: 15px;
+}
+
+/* ==================== ESTILOS PARA TARJETAS DE TURNOS EN POP-UPS ADMIN ==================== */
+
+/* Contenedores específicos de turnos en pop-ups del admin */
+#available-turnos-list,
+#historial-turnos-list {
+    max-height: 500px;
+    overflow-y: auto;
+    padding: 10px;
+}
+
+/* Grid de tarjetas para pop-ups del admin */
+#available-turnos-list .turnos-grid,
+#historial-turnos-list .turnos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    padding: 0;
+}
+
+/* Tarjetas de turnos en pop-ups del admin */
+#available-turnos-list .turno-card,
+#historial-turnos-list .turno-card {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    position: relative;
+}
+
+#available-turnos-list .turno-card:hover,
+#historial-turnos-list .turno-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
     border-color: #2d6a4f;
 }
 
-.filter-btn.active:hover {
-    background-color: #1b4332;
-    border-color: #1b4332;
+/* Fecha y hora en las tarjetas */
+#available-turnos-list .turno-fecha-hora,
+#historial-turnos-list .turno-fecha-hora {
+    text-align: center;
+    border-bottom: 1px solid #f0f0f0;
+    padding-bottom: 12px;
+    margin-bottom: 12px;
 }
 
-/* ============ SCROLL PARA VALIDACIÓN ============ */
-#validation-content {
-    max-height: 400px;
+#available-turnos-list .turno-fecha,
+#historial-turnos-list .turno-fecha {
+    font-size: 14px;
+    color: #6b7280;
+    font-weight: 500;
+    text-transform: capitalize;
+    margin-bottom: 4px;
+}
+
+#available-turnos-list .turno-hora,
+#historial-turnos-list .turno-hora {
+    font-size: 18px;
+    font-weight: bold;
+    color: #2d6a4f;
+}
+
+/* Categoría */
+#available-turnos-list .turno-categoria,
+#historial-turnos-list .turno-categoria {
+    background: #f0f9ff;
+    color: #0c4a6e;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    text-align: center;
+    margin-bottom: 8px;
+}
+
+/* Cliente */
+#historial-turnos-list .turno-cliente {
+    background: #fef7cd;
+    border-radius: 8px;
+    padding: 8px;
+}
+
+#historial-turnos-list .turno-cliente-label {
+    font-size: 11px;
+    color: #92400e;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+
+#historial-turnos-list .turno-cliente-nombre {
+    font-size: 14px;
+    color: #92400e;
+    font-weight: 500;
+}
+
+/* Servicios */
+#available-turnos-list .turno-servicios,
+#historial-turnos-list .turno-servicios {
+    background: #f0f9ff;
+    border-radius: 8px;
+    padding: 8px;
+}
+
+#available-turnos-list .turno-servicios-label,
+#historial-turnos-list .turno-servicios-label {
+    font-size: 11px;
+    color: #0c4a6e;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+
+#available-turnos-list .turno-servicios-lista,
+#historial-turnos-list .turno-servicios-lista {
+    font-size: 14px;
+    color: #1e40af;
+    font-weight: 500;
+}
+
+/* Empleados */
+#available-turnos-list .turno-empleados,
+#historial-turnos-list .turno-empleados {
+    background: #ecfdf5;
+    border-radius: 8px;
+    padding: 8px;
+}
+
+#available-turnos-list .turno-empleados-label,
+#historial-turnos-list .turno-empleados-label {
+    font-size: 11px;
+    color: #065f46;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+
+#available-turnos-list .turno-empleados-lista,
+#historial-turnos-list .turno-empleados-lista {
+    font-size: 14px;
+    color: #059669;
+    font-weight: 500;
+}
+
+/* Footer con precio y duración */
+#available-turnos-list .turno-footer,
+#historial-turnos-list .turno-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 12px;
+    border-top: 1px solid #f0f0f0;
+    margin-top: auto;
+}
+
+#available-turnos-list .turno-precio,
+#historial-turnos-list .turno-precio {
+    font-size: 16px;
+    font-weight: bold;
+    color: #2d6a4f;
+}
+
+#available-turnos-list .turno-duracion,
+#historial-turnos-list .turno-duracion {
+    font-size: 12px;
+    color: #6b7280;
+    background: #f3f4f6;
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
+/* Estado del turno */
+#available-turnos-list .turno-estado,
+#historial-turnos-list .turno-estado {
+    text-align: center;
+}
+
+/* Botones de acción en historial */
+#historial-turnos-list .turno-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #f0f0f0;
+}
+
+#historial-turnos-list .turno-actions .action-btn {
+    flex: 1;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+#historial-turnos-list .confirm-btn {
+    background: #10b981;
+    color: white;
+}
+
+#historial-turnos-list .confirm-btn:hover {
+    background: #059669;
+}
+
+#historial-turnos-list .cancel-btn {
+    background: #ef4444;
+    color: white;
+}
+
+#historial-turnos-list .cancel-btn:hover {
+    background: #dc2626;
+}
+
+/* Mensaje cuando no hay turnos */
+#available-turnos-list .no-turnos-message,
+#historial-turnos-list .no-turnos-message {
+    text-align: center;
+    padding: 40px 20px;
+    color: #6b7280;
+}
+
+#available-turnos-list .no-turnos-message h4,
+#historial-turnos-list .no-turnos-message h4 {
+    margin: 0 0 10px 0;
+    color: #374151;
+    font-size: 18px;
+}
+
+#available-turnos-list .no-turnos-message p,
+#historial-turnos-list .no-turnos-message p {
+    margin: 0;
+    font-size: 14px;
+}
+
+/* Responsive para móviles */
+@media (max-width: 768px) {
+    #available-turnos-list .turnos-grid,
+    #historial-turnos-list .turnos-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    #available-turnos-list .turno-card,
+    #historial-turnos-list .turno-card {
+        padding: 12px;
+    }
+    
+    #available-turnos-list,
+    #historial-turnos-list {
+        max-height: 400px;
+        padding: 5px;
+    }
+}
+
+/* ==================== FIN ESTILOS TARJETAS TURNOS ADMIN ==================== */
+
+/* Estilo específico para el contenedor de empleados en validación */
+#validation-empleados-list {
+    max-height: 250px;
     overflow-y: auto;
-    overflow-x: hidden;
-    padding: 10px 0;
-    scrollbar-width: thin;
-    scrollbar-color: #cbd5e1 #f1f5f9;
+    padding: 10px;
+    border: 1px solid #40916c;
+    border-radius: 8px;
+    background-color: #f8f9fa;
 }
 
-#validation-content::-webkit-scrollbar {
-    width: 6px;
-}
-
-#validation-content::-webkit-scrollbar-track {
-    background: #f1f5f9;
-    border-radius: 3px;
-}
-
-#validation-content::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
-    border-radius: 3px;
-}
-
-#validation-content::-webkit-scrollbar-thumb:hover {
-    background: #94a3b8;
-}
-
-#validation-form-container {
-    max-height: 80vh;
-    overflow-y: auto;
-    overflow-x: hidden;
-    scrollbar-width: thin;
-    scrollbar-color: #cbd5e1 #f1f5f9;
-}
-
-#validation-form-container::-webkit-scrollbar {
+/* Barra de scroll personalizada para el contenedor de validación */
+#validation-empleados-list::-webkit-scrollbar {
     width: 8px;
 }
 
-#validation-form-container::-webkit-scrollbar-track {
-    background: #f1f5f9;
+#validation-empleados-list::-webkit-scrollbar-track {
+    background: #f1f1f1;
     border-radius: 4px;
 }
 
-#validation-form-container::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
+#validation-empleados-list::-webkit-scrollbar-thumb {
+    background: #40916c;
     border-radius: 4px;
 }
 
-#validation-form-container::-webkit-scrollbar-thumb:hover {
-    background: #94a3b8;
+#validation-empleados-list::-webkit-scrollbar-thumb:hover {
+    background: #2d6a4f;
 }

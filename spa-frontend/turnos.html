@@ -78,6 +78,11 @@
         <div class="turnos-form-container">
             <h2>Selecciona tus servicios:</h2>
             
+            <!-- Botón para ver todos los turnos disponibles -->
+            <div class="categoria-section-general">
+                <button class="ver-todos-turnos-btn">Ver todos los turnos disponibles</button>
+            </div>
+            
             <!-- Categoría Belleza -->
             <div class="categoria-section">
                 <h3>Belleza</h3>
@@ -165,10 +170,20 @@
 
     <!-- Pop-up para mostrar turnos disponibles -->
     <div id="popup-turnos-disponibles" class="popup hidden">
-        <h3 id="popup-titulo"></h3>
-        <div id="popup-turnos-lista"></div>
-        <div style="margin-top:1em;">
-            <button type="button" id="cerrar-popup-turnos">Cerrar</button>
+        <div class="popup-content">
+            <h3 id="popup-titulo">Turnos Disponibles</h3>
+            <div class="popup-filters">
+                <input type="text" id="filtro-busqueda" placeholder="Buscar por servicio, empleado o fecha..." class="filter-input">
+                <select id="filtro-ordenar" class="filter-select">
+                    <option value="fecha">Ordenar por fecha</option>
+                    <option value="precio">Ordenar por precio</option>
+                    <option value="duracion">Ordenar por duración</option>
+                </select>
+            </div>
+            <div id="popup-turnos-lista"></div>
+            <div class="popup-actions">
+                <button type="button" id="cerrar-popup-turnos" class="popup-btn secondary">Cerrar</button>
+            </div>
         </div>
     </div>
 
