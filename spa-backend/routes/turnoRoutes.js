@@ -113,7 +113,7 @@ router.get('/disponibles/:categoria', async (req, res) => {
 router.post('/reservas', verifyToken, async (req, res) => {
     console.log('Datos recibidos:', req.body);
     try {
-        const { turno } = req.body;
+        const { turno, tarjeta } = req.body;
         const clienteId = req.user.id;
 
         // Validar datos básicos
@@ -124,6 +124,44 @@ router.post('/reservas', verifyToken, async (req, res) => {
         // Verificar que el usuario sea cliente
         if (req.user.role !== 'cliente') {
             return res.status(403).json({ error: 'Solo los clientes pueden reservar turnos' });
+        }
+
+        // Si hay datos de tarjeta y se solicita guardarla
+        if (tarjeta && tarjeta.guardar) {
+            try {
+                // Crear tabla si no existe
+                await db.query(`
+                    CREATE TABLE IF NOT EXISTS tarjetas_debito (
+                        id_tarjeta INT AUTO_INCREMENT PRIMARY KEY,
+                        id_cliente INT NOT NULL,
+                        numero_tarjeta VARCHAR(16) NOT NULL,
+                        titular VARCHAR(100) NOT NULL,
+                        vencimiento VARCHAR(5) NOT NULL,
+                        dni_titular VARCHAR(20) NOT NULL,
+                        fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        activa BOOLEAN DEFAULT TRUE,
+                        FOREIGN KEY (id_cliente) REFERENCES cliente(id_cliente) ON DELETE CASCADE,
+                        INDEX idx_cliente (id_cliente)
+                    )
+                `);
+
+                // Desactivar tarjetas existentes
+                await db.query(
+                    'UPDATE tarjetas_debito SET activa = FALSE WHERE id_cliente = ?',
+                    [clienteId]
+                );
+
+                // Guardar nueva tarjeta
+                await db.query(
+                    'INSERT INTO tarjetas_debito (id_cliente, numero_tarjeta, titular, vencimiento, dni_titular) VALUES (?, ?, ?, ?, ?)',
+                    [clienteId, tarjeta.numero, tarjeta.titular, tarjeta.vencimiento, tarjeta.dni_titular]
+                );
+
+                console.log('Tarjeta guardada exitosamente para cliente:', clienteId);
+            } catch (err) {
+                console.error('Error al guardar tarjeta:', err);
+                // No fallar la reserva por error al guardar tarjeta
+            }
         }
 
         // Usar el gestor de turnos para reservar

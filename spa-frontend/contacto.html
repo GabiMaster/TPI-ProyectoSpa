@@ -116,11 +116,11 @@
                 <h2>Método de Pago</h2>
                 <div class="contact-form-group">
                     <label class="contact-metodo-pago-label">
-                        <input class="contact-metodo-pago-input" type="radio" name="metodo-pago" value="efectivo" required>
-                        Efectivo
+                        <input class="contact-metodo-pago-input" type="radio" name="metodo-pago" value="debito" required>
+                        Tarjeta de Débito
                     </label>
-                    <p class="contact-metodo-pago-info" id="efectivo-info" style="display: none;">
-                        Deberá abonar el total del servicio en el área de recepción según el día y la hora indicados en su turno.
+                    <p class="contact-metodo-pago-info" id="debito-info" style="display: none;">
+                        Complete los datos de su tarjeta de débito para procesar el pago de forma segura.
                     </p>
                 </div>
                 <div class="contact-form-group">
@@ -187,5 +187,47 @@
             </div>
         </div>
     </footer>
+
+    <!-- Pop-up para datos de tarjeta de débito -->
+    <div id="tarjeta-popup" class="popup hidden">
+        <div class="popup-content">
+            <h3>Datos de Tarjeta de Débito</h3>
+            <form id="tarjeta-form">
+                <div class="form-group">
+                    <label for="numero-tarjeta">Número de Tarjeta:</label>
+                    <input type="text" id="numero-tarjeta" name="numero-tarjeta" placeholder="1234 5678 9012 3456" maxlength="19" required>
+                </div>
+                <div class="form-group">
+                    <label for="nombre-titular">Nombre del Titular:</label>
+                    <input type="text" id="nombre-titular" name="nombre-titular" placeholder="NOMBRE APELLIDO" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="vencimiento">Vencimiento:</label>
+                        <input type="text" id="vencimiento" name="vencimiento" placeholder="MM/AA" maxlength="5" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="cvv">CVV:</label>
+                        <input type="text" id="cvv" name="cvv" placeholder="123" maxlength="3" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="dni-titular">DNI del Titular:</label>
+                    <input type="text" id="dni-titular" name="dni-titular" placeholder="12345678" required>
+                </div>
+                <div class="form-group checkbox-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="guardar-tarjeta" name="guardar-tarjeta">
+                        Guardar esta tarjeta en mi perfil para futuros pagos
+                    </label>
+                </div>
+                <div class="popup-actions">
+                    <button type="button" id="cancelar-tarjeta" class="popup-btn secondary">Cancelar</button>
+                    <button type="submit" id="confirmar-tarjeta" class="popup-btn primary">Confirmar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
 </body>
 </html>
