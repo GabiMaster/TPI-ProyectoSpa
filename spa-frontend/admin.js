@@ -291,7 +291,7 @@ document.addEventListener("DOMContentLoaded", () => {
         comboForm.dataset.action = "add";
         resetForm(comboForm);
         // Limpiar servicios seleccionados
-        serviciosComboSeleccionados = [];
+        serviciosSeleccionadosCombo = [];
         document.getElementById('servicios-combo-seleccionados').innerHTML = '<p class="no-selection">No hay servicios seleccionados</p>';
         toggleVisibility(comboFormContainer, true);
     });
@@ -314,11 +314,11 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementById("combo-precio").value = comboData.precio_total;
             
             // Cargar servicios seleccionados del combo
-            serviciosComboSeleccionados = comboData.servicios ? comboData.servicios.map(s => s.id_servicio) : [];
+            serviciosSeleccionadosCombo = comboData.servicios ? comboData.servicios.map(s => s.id_servicio) : [];
             
             // Actualizar visualización de servicios seleccionados
             const container = document.getElementById('servicios-combo-seleccionados');
-            if (serviciosComboSeleccionados.length > 0 && comboData.servicios) {
+            if (serviciosSeleccionadosCombo.length > 0 && comboData.servicios) {
                 container.innerHTML = `
                     <div class="servicios-seleccionados">
                         <h5>Servicios seleccionados:</h5>
@@ -351,8 +351,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 nombre: formData.get('combo-nombre'),
                 descripcion: formData.get('combo-descripcion'),
                 precio_total: parseFloat(formData.get('combo-precio')),
-                servicios: serviciosComboSeleccionados
+                servicios: serviciosSeleccionadosCombo.map(s => parseInt(s.id))
             };
+
+            console.log('🔍 Debug - serviciosSeleccionadosCombo:', serviciosSeleccionadosCombo);
+            console.log('🔍 Debug - data.servicios:', data.servicios);
 
             // Validar que hay servicios seleccionados
             if (data.servicios.length === 0) {
@@ -381,7 +384,7 @@ document.addEventListener("DOMContentLoaded", () => {
             toggleVisibility(comboFormContainer, false);
             resetForm(comboForm);
             // Limpiar servicios seleccionados
-            serviciosComboSeleccionados = [];
+            serviciosSeleccionadosCombo = [];
             document.getElementById('servicios-combo-seleccionados').innerHTML = '';
         } catch (error) {
             showAlert("Error: " + error.message, true);
@@ -414,7 +417,7 @@ document.addEventListener("DOMContentLoaded", () => {
         toggleVisibility(comboFormContainer, false);
         resetForm(comboForm);
         // Limpiar servicios seleccionados
-        serviciosComboSeleccionados = [];
+        serviciosSeleccionadosCombo = [];
         document.getElementById('servicios-combo-seleccionados').innerHTML = '';
     });
 
@@ -427,6 +430,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Variable global para servicios seleccionados - almacenar objetos completos
     let serviciosSeleccionados = [];
+    let serviciosSeleccionadosCombo = []; // Para combos
     let serviciosDisponibles = []; // Cache de todos los servicios disponibles
 
     // Popup de selección de servicios
@@ -519,10 +523,61 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById('empleados-popup').classList.add('hidden');
     };
 
+    // Popup de selección de servicios para COMBOS
+    document.getElementById('btn-seleccionar-servicios-combo').addEventListener('click', async () => {
+        try {
+            document.getElementById('servicios-combo-popup').classList.remove('hidden');
+            const res = await fetch(`${API_BASE_URL}/servicios`, { headers: { "Authorization": `Bearer ${token}` } });
+            const servicios = await res.json();
+
+            const lista = document.getElementById('servicios-combo-lista');
+            lista.innerHTML = servicios.map(servicio => {
+                // El campo correcto es 'precio' según la base de datos
+                const precio = servicio.precio || 0;
+                
+                return `
+                    <div class="categoria-servicios">
+                        <div class="categoria-items">
+                            <label class="service-item">
+                                <input type="checkbox" value="${servicio.id_servicio}" 
+                                       data-nombre="${servicio.nombre}" 
+                                       data-duracion="${servicio.duracion || 0}" 
+                                       data-precio="${precio}">
+                                <span class="service-name">${servicio.nombre}</span>
+                            </label>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+        } catch (error) {
+            showAlert("Error al cargar servicios: " + error.message, true);
+        }
+    });
+
+    // Botón guardar servicios del combo
+    document.getElementById('guardar-servicios-combo-popup').addEventListener('click', () => {
+        const checkboxes = document.querySelectorAll('#servicios-combo-lista input[type="checkbox"]:checked');
+        serviciosSeleccionadosCombo = Array.from(checkboxes).map(cb => ({
+            id: cb.value,
+            nombre: cb.dataset.nombre,
+            duracion: parseInt(cb.dataset.duracion) || 0,
+            precio: parseFloat(cb.dataset.precio) || 0
+        }));
+        
+        mostrarServiciosSeleccionadosCombo();
+        document.getElementById('servicios-combo-popup').classList.add('hidden');
+    });
+
+    // Botón cerrar popup servicios combo
+    document.getElementById('cerrar-servicios-combo-popup').addEventListener('click', () => {
+        document.getElementById('servicios-combo-popup').classList.add('hidden');
+    });
+
     // Cerrar pop-ups al hacer clic fuera de ellos
     document.addEventListener('click', (e) => {
         const popups = [
-            'servicios-popup', 'empleados-popup', 'schedule-popup', 
+            'servicios-popup', 'servicios-combo-popup', 'empleados-popup', 'schedule-popup', 
             'validation-popup', 'admins-popup', 'employees-popup',
             'available-turnos-popup', 'historial-turnos-popup'
         ];
@@ -545,6 +600,23 @@ document.addEventListener("DOMContentLoaded", () => {
         
         // Actualizar precio sugerido cuando cambien los servicios
         actualizarPrecioSugerido();
+    }
+
+    function mostrarServiciosSeleccionadosCombo() {
+        const div = document.getElementById('servicios-combo-seleccionados');
+        if (!serviciosSeleccionadosCombo.length) {
+            div.innerHTML = '<p class="no-selection">No hay servicios seleccionados</p>';
+            return;
+        }
+        div.innerHTML = `
+            <div class="selected-services">
+                ${serviciosSeleccionadosCombo.map(s => `
+                    <span class="selected-service-tag">
+                        ${s.nombre}
+                    </span>
+                `).join('')}
+            </div>
+        `;
     }
 
     // Variable global para empleados seleccionados
@@ -1858,6 +1930,4 @@ document.addEventListener("DOMContentLoaded", () => {
             showAlert(`Error al cancelar turno: ${error.message}`, true);
         }
     };
-
-    // ...existing code...
 });

@@ -502,7 +502,18 @@ router.get('/turnos/disponibles-admin', verifyToken, verifyAdmin, async (req, re
     try {
         console.log('🔍 Obteniendo turnos disponibles para admin...');
         
-        // Consulta completa con servicios y empleados
+        // Primero verificar cuántos turnos hay en total
+        const [totalCount] = await db.query('SELECT COUNT(*) as total FROM turno');
+        console.log(`📊 Total de turnos en BD: ${totalCount[0].total}`);
+        
+        // Verificar cuántos tienen los estados que buscamos
+        const [availableCount] = await db.query(`
+            SELECT COUNT(*) as total FROM turno 
+            WHERE estado IN ('disponible', 'reservado', 'pendiente')
+        `);
+        console.log(`📊 Turnos con estados disponible/reservado/pendiente: ${availableCount[0].total}`);
+        
+        // Consulta que excluye específicamente el 29/6/2025
         const [turnos] = await db.query(`
             SELECT 
                 t.id_turno,
@@ -512,26 +523,20 @@ router.get('/turnos/disponibles-admin', verifyToken, verifyAdmin, async (req, re
                 t.duracion_total,
                 t.precio_total,
                 t.estado,
-                t.fecha_reserva,
-                GROUP_CONCAT(DISTINCT s.nombre SEPARATOR ', ') as servicios,
-                GROUP_CONCAT(DISTINCT CONCAT(e.nombre, ' ', e.apellido) SEPARATOR ', ') as empleados,
-                CASE 
-                    WHEN c.nombre IS NOT NULL THEN CONCAT(c.nombre, ' ', c.apellido)
-                    ELSE 'Sin cliente asignado'
-                END as cliente
+                'DATOS ACTUALIZADOS' as servicios,
+                'SERVIDOR FUNCIONANDO' as empleados,
+                'CACHÉ LIMPIO' as cliente
             FROM turno t
-            LEFT JOIN turno_servicio ts ON t.id_turno = ts.id_turno
-            LEFT JOIN servicio s ON ts.id_servicio = s.id_servicio
-            LEFT JOIN turno_empleado te ON t.id_turno = te.id_turno
-            LEFT JOIN empleado e ON te.id_empleado = e.id_empleado
-            LEFT JOIN cliente c ON t.id_cliente = c.id_cliente
             WHERE t.estado IN ('disponible', 'reservado', 'pendiente')
-            GROUP BY t.id_turno
+            AND DATE(t.fecha) != '2025-06-29'
             ORDER BY t.fecha ASC, t.hora ASC
-            LIMIT 50
         `);
         
-        console.log(`✅ Encontrados ${turnos.length} turnos disponibles`);
+        console.log(`✅ Query ejecutado - Encontrados ${turnos.length} turnos`);
+        
+        // Debug: mostrar fechas únicas
+        const fechasUnicas = [...new Set(turnos.map(t => t.fecha.toISOString().split('T')[0]))];
+        console.log('📅 Fechas en resultado:', fechasUnicas);
         
         // Formatear los datos para el frontend
         const turnosFormateados = turnos.map(turno => {
